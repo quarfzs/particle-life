@@ -2,7 +2,6 @@ package life;
 
 import pointmanagement.Point;
 import pointmanagement.PointManager;
-import pointmanagement.PointManagerDefault;
 import processing.core.PGraphics;
 
 import javax.swing.*;
@@ -40,10 +39,8 @@ public class World {
     private float requestedParticleDensity = particleDensity;
 
     private boolean drawParticleManager = false;
-    private boolean drawRelevantAroundCurser = false;
     private boolean drawForceDiagram = false;
     private boolean drawRenderingStats = false;
-    private Particle mockParticle = new Particle(0, 0, 0, 0, null);
 
     private float mouseX = 0;
     private float mouseY = 0;
@@ -51,7 +48,7 @@ public class World {
     private float pendingDragY = 0;
     private boolean mousePressed = false;
     private Camera camera;
-    private float cameraFocusSelectionRadius = 15f;
+    private float cameraFocusSelectionRadius = 25f;
 
     private float particleDragSelectionRadius = 25f;
 
@@ -85,7 +82,7 @@ public class World {
     }
 
     private PointManager createNewPointManager() {
-        return new PointManagerDefault(rMax, particleDensity, 0, boxWidth, 0, boxHeight);
+        return new PointManager(rMax, particleDensity, 0, boxWidth, 0, boxHeight);
     }
 
     /**
@@ -94,8 +91,9 @@ public class World {
     private void recreatePointManager() {
         PointManager oldPointManager = pm;
         pm = createNewPointManager();
-        for (Point point : oldPointManager.getAll()) {
-            pm.add(point);
+        PointManager.AllIterator all = oldPointManager.getAllWithRelevant(wrapWorld);
+        while (all.hasNext()) {
+            pm.add(all.next());
         }
     }
 
@@ -175,7 +173,6 @@ public class World {
         c.addSlider("Particle Size on Screen", (int) particleSize, 1, 5, 0, 1, value -> particleSize = value);
         c.addCheckBox("Wrap World", wrapWorld, state -> wrapWorld = state);
         c.addCheckBox("Draw Diagram", drawForceDiagram, state -> drawForceDiagram = state);
-        c.addCheckBox("Draw Relevant Around Cursor", drawRelevantAroundCurser, state -> drawRelevantAroundCurser = state);
         c.addCheckBox("Draw Containers", drawParticleManager, state -> drawParticleManager = state);
         c.addCheckBox("Draw Rendering Stats", drawRenderingStats, state -> drawRenderingStats = state);
         c.addButton("Save Screenshot", this::requestScreenshot);
@@ -391,7 +388,7 @@ public class World {
                 if (camera.isFollowing()) {
                     camera.stopFollow();
                 } else {
-                    camera.startFollow(pm, mouseX, mouseY, cameraFocusSelectionRadius);
+                    camera.startFollow(pm, mouseX, mouseY, cameraFocusSelectionRadius, wrapWorld);
                 }
                 break;
         }
@@ -457,18 +454,15 @@ public class World {
 
         pointUpdater.setValues(rKern, rMax, forceFactor, friction, heat, boxWidth, boxHeight, dt);
 
-
-        for (Point point : pm.getAll()) {
-            pointUpdater.updateWithRelevant(point, pm.getRelevant(point, rMax, wrapWorld));
+        PointManager.AllIterator all = pm.getAllWithRelevant(wrapWorld);
+        while (all.hasNext()) {
+            pointUpdater.updateWithRelevant(all.next(), all.getRelevant());
         }
 
         if (mousePressed) {
             // drag all particles in a specific radius
 
-            mockParticle.x = mouseX;
-            mockParticle.y = mouseY;
-
-            for (Point point : pm.getRelevant(mockParticle, particleDragSelectionRadius, wrapWorld)) {
+            for (Point point : pm.getRelevant(mouseX, mouseY, wrapWorld)) {
                 Particle particle = (Particle) point;
 
                 float dx = particle.x - mouseX;
@@ -488,8 +482,10 @@ public class World {
             pendingDragY = 0;
         }
 
-        for (Point p : pm.getAll()) {
-            Particle particle = (Particle) p;
+
+        all = pm.getAll();
+        while (all.hasNext()) {
+            Particle particle = (Particle) all.next();
 
             particle.x += particle.vx * dt;
             particle.y += particle.vy * dt;
@@ -534,18 +530,6 @@ public class World {
             context.popStyle();
         }
 
-        if (drawRelevantAroundCurser) {
-            context.pushStyle();
-            context.noFill();
-            context.stroke(255);
-            mockParticle.x = mouseX;
-            mockParticle.y = mouseY;
-            for (Point p : pm.getRelevant(mockParticle, rMax, wrapWorld)) {
-                context.ellipse(p.getX(), p.getY(), 5, 5);
-            }
-            context.popStyle();
-        }
-
         if (!camera.isFollowing() && Math.abs(camera.getScale() - 1) < 0.1f) {
             context.pushStyle();
             context.noFill();
@@ -574,8 +558,9 @@ public class World {
     public void drawParticles(PGraphics context) {
         context.pushStyle();
         context.noStroke();
-        for (Point p : pm.getAll()) {
-            Particle particle = (Particle) p;
+        PointManager.AllIterator all = pm.getAll();
+        while (all.hasNext()) {
+            Particle particle = (Particle) all.next();
             context.fill(particle.attractionType.color);
             context.rect(particle.x, particle.y, particleSize, particleSize);
         }

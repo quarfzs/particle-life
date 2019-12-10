@@ -50,4 +50,3 @@ Naturally, the main diagonal specifies how much a particle type is attracted to 
 
 - better user interface
 - import / export set of rules as matrix representation
-- adjustabe cursor radius (for dragging & following)

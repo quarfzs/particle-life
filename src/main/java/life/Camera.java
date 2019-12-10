@@ -24,23 +24,6 @@ public class Camera {
     private float nextFocusX;
     private float nextFocusY;
 
-    private PositionBufferPoint positionBufferParticle = new PositionBufferPoint();
-    private class PositionBufferPoint implements Point {
-
-        float x = 0;
-        float y = 0;
-
-        @Override
-        public float getX() {
-            return x;
-        }
-
-        @Override
-        public float getY() {
-            return y;
-        }
-    };
-
     private float centerX;
     private float centerY;
 
@@ -102,15 +85,12 @@ public class Camera {
         return following;
     }
 
-    public void startFollow(PointManager pm, float x, float y, float radius) {
-
-        positionBufferParticle.x = x;
-        positionBufferParticle.y = y;
+    public void startFollow(PointManager pm, float x, float y, float radius, boolean wrapWorld) {
 
         float r_2 = radius*radius;
 
         focusPool.clear();
-        for (Object o: pm.getRelevant(positionBufferParticle, radius, false)) {
+        for (Object o: pm.getRelevant(x, y, wrapWorld)) {
             if (focusPool.size() > MAX_FOCUS_POOL_SIZE) {
                 break;
             }
