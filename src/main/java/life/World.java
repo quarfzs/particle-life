@@ -8,6 +8,7 @@ import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import java.awt.*;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Random;
 
 public class World {
@@ -26,7 +27,14 @@ public class World {
     private boolean wrapWorld = true;
     private int spawnMode = 0;
 
-    private AttractionType[] attractionTypes = new AttractionType[6];
+    private Matrix matrix;
+    private Matrix requestedMatrix = null;
+    private int nextMatrixSize = 6;
+    private HashMap<Integer, Integer> typeColorMap;
+    private ArrayList<Matrix.Initializer> matrixInitializers = new ArrayList<>();
+    private ArrayList<String> matrixInitializerNames = new ArrayList<>();
+    private int currentMatrixInitializerIndex = 0;
+    private int requestedMatrixInitializerIndex = currentMatrixInitializerIndex;
 
     private Random random = new Random();
     private ColorMaker colorMaker;
@@ -37,7 +45,6 @@ public class World {
     private boolean resetRequested = false;
     private boolean respawnRequested = false;
     private float requestedRMax = rMax;
-    private int requestedAttractionTypeCount = attractionTypes.length;
     private float requestedParticleDensity = particleDensity;
 
     private boolean drawParticleManager = false;
@@ -54,10 +61,7 @@ public class World {
 
     private float particleDragSelectionRadius = 25f;
 
-    private ArrayList<AttractionSetter> attractionSetters = new ArrayList<>();
-    private ArrayList<String> attractionSetterNames = new ArrayList<>();
-    private int currentAttractionSetterIndex = 0;
-    private int requestedAttractionSetterIndex = currentAttractionSetterIndex;
+
 
     private boolean screenshotRequested = false;
 
@@ -165,9 +169,9 @@ public class World {
 
         GUIBuilder c = new GUIBuilder();
 
-        c.addSlider("Number of Types (Colors)", attractionTypes.length, 1, 17, 0, 1, this::requestAttractionTypeCount);
+        c.addSlider("Number of Types (Colors)", nextMatrixSize, 1, 17, 0, 1, this::requestMatrixSize);
         c.addSlider("Particle Density (in 1/1000s per pixel)", (int) (particleDensity * 1000), 0, 5, 0, 1, value -> requestedParticleDensity = value / 1000f);
-        c.addSlider("Attraction Setter (enable diagram for better understanding)", currentAttractionSetterIndex, 0, attractionSetters.size() - 1, 0, 1, this::requestAttractionSetterIndex);
+        c.addSlider("Matrix Initializer (enable diagram for better understanding)", currentMatrixInitializerIndex, 0, matrixInitializers.size() - 1, 0, 1, this::requestMatrixInitializerIndex);
         c.addSlider("Spawn Mode", spawnMode, 0, 4, 1, 1, value -> spawnMode = value);
         c.addButton("New World", this::requestReset);
         c.addButton("Stir Up", this::requestRespawn);
@@ -178,10 +182,22 @@ public class World {
         c.addSlider("Force Factor", (int) forceFactor, 0, 10000, 500, 2000, value -> forceFactor = value);
         c.addSlider("Particle Size on Screen", (int) particleSize, 1, 5, 0, 1, value -> particleSize = value);
         c.addCheckBox("Wrap World", wrapWorld, state -> wrapWorld = state);
-        c.addCheckBox("Draw Diagram", drawForceDiagram, state -> drawForceDiagram = state);
+        c.addCheckBox("Draw Matrix", drawForceDiagram, state -> drawForceDiagram = state);
         c.addCheckBox("Draw Containers", drawParticleManager, state -> drawParticleManager = state);
         c.addCheckBox("Draw Rendering Stats", drawRenderingStats, state -> drawRenderingStats = state);
         c.addButton("Save Screenshot", this::requestScreenshot);
+
+        final JTextArea matrixTextArea = new JTextArea(6, 24);
+        JScrollPane matrixScrollPane = new JScrollPane(matrixTextArea);
+        panel.add(matrixScrollPane);
+
+        c.addButton("Apply Matrix", () -> {
+            Matrix m = MatrixParser.parseMatrix(matrixTextArea.getText());
+            if (m != null) {
+                requestMatrix(m);
+            }
+        });
+        c.addButton("Get Matrix", () -> matrixTextArea.setText(MatrixParser.matrixToString(matrix)));
 
         frame.setVisible(true);
         frame.setLocationRelativeTo(null);  // center window on screen
@@ -196,7 +212,8 @@ public class World {
 
     private void init() {
         initAttractionSetters();
-        setAttractionTypes();
+        makeMatrix();
+        calcColors();
         spawnParticles();
     }
 
@@ -204,12 +221,16 @@ public class World {
         requestedRMax = newRMax;
     }
 
-    private void requestAttractionTypeCount(int count) {
-        requestedAttractionTypeCount = count;
+    private void requestMatrixSize(int matrixSize) {
+        nextMatrixSize = matrixSize;
+    }
+
+    private void requestMatrix(Matrix matrix) {
+        requestedMatrix = matrix;
     }
 
     /**
-     * use this if you want to call <code>reset()</code> from another Thread
+     * use this if you want to call {@link #reset()} from another Thread
      */
     private void requestReset() {
         resetRequested = true;
@@ -224,7 +245,8 @@ public class World {
 
     private void reset() {
         pm.clear();
-        setAttractionTypes();
+        makeMatrix();
+        calcColors();
         spawnParticles();
         camera.stopFollow();
     }
@@ -235,130 +257,92 @@ public class World {
         camera.stopFollow();
     }
 
-    private void addAttractionSetter(String name, AttractionSetter a) {
-        attractionSetterNames.add(name);
-        attractionSetters.add(a);
+    private void addAttractionSetter(String name, Matrix.Initializer initializer) {
+        matrixInitializerNames.add(name);
+        matrixInitializers.add(initializer);
     }
 
     private void initAttractionSetters() {
 
-        addAttractionSetter("random f", (types) -> {
-            for (AttractionType type : types) {
-                for (AttractionType type2 : types) {
-                    type.attractionRules.put(type2, Helper.uniform(-1, 1));
+        final Matrix.Initializer randomInitializer = (i, j) -> Helper.uniform(-1, 1);
+        addAttractionSetter("random f", randomInitializer);
+
+        addAttractionSetter("chains", new Matrix.Initializer() {
+            private int n;
+
+            @Override
+            public void init(int n) {
+                this.n = n;
+            }
+
+            @Override
+            public float getValue(int i, int j) {
+                if (j == i) {
+                    return 1f;
+                } else if (j == Helper.modulo(i - 1, n)) {
+                    return 0.0f;
+                } else if (j == Helper.modulo(i + 1, n)) {
+                    return 0.2f;
                 }
+                return 0f;
             }
         });
 
-        addAttractionSetter("equal pairs", (types) -> {
-            for (AttractionType type : types) {
-                for (AttractionType type2 : types) {
-                    type.attractionRules.put(type2, Helper.uniform(-1, 1));
-                }
+        addAttractionSetter("random chains", new Matrix.Initializer() {
+            private int n;
+
+            @Override
+            public void init(int n) {
+                this.n = n;
             }
 
-            for (AttractionType type : types) {
-                // query attraction of every other and copy it
-                for (AttractionType type2 : types) {
-                    type.attractionRules.put(type2, type2.attractionRules.get(type));
+            @Override
+            public float getValue(int i, int j) {
+                if (j == i) {
+                    return Helper.uniform(0.2f, 1.0f);
+                } else if (j == Helper.modulo(i - 1, n)) {
+                    return 0.0f;
+                } else if (j == Helper.modulo(i + 1, n)) {
+                    return 0.2f;
                 }
-            }
-        });
-
-        addAttractionSetter("chains", (types) -> {
-            for (int i = 0; i < types.length; i++) {
-
-                AttractionType type = types[i];
-
-                int before = Helper.modulo(i - 1, types.length);
-                int after = Helper.modulo(i + 1, types.length);
-
-                for (int j = 0; j < types.length; j++) {
-
-                    float force;
-
-                    if (j == i) {
-                        force = 1f;
-                    } else if (j == before) {
-                        force = 0.0f;
-                    } else if (j == after) {
-                        force = 0.2f;
-                    } else {
-                        force = 0f;
-                    }
-
-                    type.attractionRules.put(types[j], force);
-                }
+                return Helper.uniform(-0.0f, 0.0f);
             }
         });
 
-        addAttractionSetter("random chains", (types) -> {
-            for (int i = 0; i < types.length; i++) {
+        addAttractionSetter("equal pairs", new Matrix.Initializer() {
+            private Matrix m;
 
-                AttractionType type = types[i];
-
-                int before = Helper.modulo(i - 1, types.length);
-                int after = Helper.modulo(i + 1, types.length);
-
-                for (int j = 0; j < types.length; j++) {
-
-                    float force;
-
-                    if (j == i) {
-                        force = Helper.uniform(0.2f, 1.0f);
-                    } else if (j == before) {
-                        force = 0;
-                    } else if (j == after) {
-                        force = 0.2f;
-                    } else {
-                        force = Helper.uniform(-0.0f, 0.0f);
-                    }
-
-                    type.attractionRules.put(types[j], force);
-                }
+            @Override
+            public void init(int n) {
+                m = new Matrix(n, randomInitializer);
             }
-        });
 
-        addAttractionSetter("medium clusters", (types) -> {
-            for (AttractionType type : attractionTypes) {
-                for (AttractionType type2 : attractionTypes) {
-                    if (type2 == type) {
-                        type.attractionRules.put(type2, Helper.uniform(0.1f, 0.2f));
-                    } else {
-                        if (Math.random() < 0.5f) {
-                            type.attractionRules.put(type2, Helper.uniform(0.2f, 0.5f));
-                        } else {
-                            type.attractionRules.put(type2, -Helper.uniform(0.2f, 0.5f));
-                        }
-                    }
-                }
+            @Override
+            public float getValue(int i, int j) {
+                return m.get(Math.min(i, j), Math.max(i, j));
             }
         });
     }
 
-    private void setAttractionTypes() {
+    /**
+     * Creates the matrix with the current initializer.
+     * Also correctly sets the colors.
+     */
+    private void makeMatrix() {
+        matrix = new Matrix(nextMatrixSize, matrixInitializers.get(currentMatrixInitializerIndex));
+    }
 
-        for (int step = 0; step < attractionTypes.length; step++) {
-
-            attractionTypes[step] = new AttractionType(colorMaker.hsb(
-                    step / (float) attractionTypes.length,
+    private void calcColors() {
+        typeColorMap = new HashMap<>(matrix.n);
+        for (int type = 0; type < matrix.n; type++) {
+            typeColorMap.put(type, colorMaker.hsb(
+                    type / (float) matrix.n,
                     1,
                     1
             ));
         }
-
-        for (AttractionType type : attractionTypes) {
-            for (AttractionType type2 : attractionTypes) {
-                type.attractionRules.put(type2, 0f);
-            }
-        }
-
-        attractionSetters.get(currentAttractionSetterIndex).set(attractionTypes);
     }
 
-    private interface AttractionSetter {
-        void set(AttractionType[] attractionTypes);
-    }
 
     private void spawnParticles() {
         for (int i = 0; i < nParticles; i++) {
@@ -400,17 +384,12 @@ public class World {
                 }
             }
 
-            AttractionType randomAttractionType = attractionTypes[random.nextInt(attractionTypes.length)];
-
-            pm.add(new Particle(randomX, randomY, randomAttractionType));
+            pm.add(new Particle(randomX, randomY, random.nextInt(matrix.n)));
         }
     }
 
-    /**
-     * use this if you want to call <code>setAttractionSetterIndex()</code> from another Thread
-     */
-    private void requestAttractionSetterIndex(int index) {
-        requestedAttractionSetterIndex = index;
+    private void requestMatrixInitializerIndex(int index) {
+        requestedMatrixInitializerIndex = index;
     }
 
     public void keyReleased(char key) {
@@ -472,13 +451,20 @@ public class World {
             recreatePointManager();
         }
 
-        if (requestedAttractionTypeCount != attractionTypes.length) {
-            attractionTypes = new AttractionType[requestedAttractionTypeCount];
+        if (requestedMatrix != null) {
+            matrix = requestedMatrix;
+            requestedMatrix = null;
+            nextMatrixSize = matrix.n;
+            calcColors();
+            respawn();
+        }
+
+        if (nextMatrixSize != matrix.n) {
             requestReset();
         }
 
-        if (requestedAttractionSetterIndex != currentAttractionSetterIndex) {
-            currentAttractionSetterIndex = requestedAttractionSetterIndex;
+        if (requestedMatrixInitializerIndex != currentMatrixInitializerIndex) {
+            currentMatrixInitializerIndex= requestedMatrixInitializerIndex;
             requestReset();
         }
 
@@ -496,7 +482,7 @@ public class World {
 
         PointManager.AllIterator all = pm.getAllWithRelevant(wrapWorld);
         while (all.hasNext()) {
-            pointUpdater.updateWithRelevant(all.next(), all.getRelevant());
+            pointUpdater.updateWithRelevant(all.next(), all.getRelevant(), matrix);
         }
 
         if (mousePressed) {
@@ -601,10 +587,14 @@ public class World {
         PointManager.AllIterator all = pm.getAll();
         while (all.hasNext()) {
             Particle particle = (Particle) all.next();
-            context.fill(particle.attractionType.color);
+            context.fill(getColor(particle.type));
             context.rect(particle.x, particle.y, particleSize, particleSize);
         }
         context.popStyle();
+    }
+
+    private int getColor(int type) {
+        return typeColorMap.get(type);
     }
 
     private void drawForces(PGraphics context) {
@@ -612,22 +602,22 @@ public class World {
 
         float size = 20;
 
-        context.translate(context.width - size*(attractionTypes.length+1), 0);
+        context.translate(context.width - size * (matrix.n + 1), 0);
 
         context.translate(size/2, size/2);
 
-        for (int i = 0; i < attractionTypes.length; i++) {
-            context.fill(attractionTypes[i].color);
-            context.ellipse(size + i*size, 0, size/2, size/2);
-            context.ellipse(0, size + i*size, size/2, size/2);
+        for (int type = 0; type < matrix.n; type++) {
+            context.fill(typeColorMap.get(type));
+            context.ellipse(size + type * size, 0, size / 2, size / 2);
+            context.ellipse(0, size + type * size, size / 2, size / 2);
         }
 
-        context.translate(size/2, size/2);
+        context.translate(size / 2, size / 2);
         context.textAlign(context.CENTER, context.CENTER);
-        for (int i = 0; i < attractionTypes.length; i++) {
-            for (int j = 0; j < attractionTypes.length; j++) {
+        for (int i = 0; i < matrix.n; i++) {
+            for (int j = 0; j < matrix.n; j++) {
 
-                float attraction = attractionTypes[i].attractionRules.get(attractionTypes[j]);
+                float attraction = matrix.get(i, j);
 
                 if (attraction > 0) {
                     float c = 255 * attraction;
@@ -637,19 +627,19 @@ public class World {
                     context.fill(c, 0, 0);
                 }
 
-                context.rect(j*size, i*size, size, size);
+                context.rect(j * size, i * size, size, size);
 
                 context.fill(255);
-                context.text(String.format("%.0f", attraction*10d), (j+0.5f)*size, (i+0.5f)*size);
+                context.text(String.format("%.0f", attraction * 10), (j + 0.5f) * size, (i + 0.5f) * size);
             }
         }
 
         context.fill(255);
         context.textAlign(context.RIGHT);
         context.text(String.format("%s [%d]",
-                attractionSetterNames.get(currentAttractionSetterIndex),
-                currentAttractionSetterIndex),
-                size*attractionTypes.length, size*attractionTypes.length + size);
+                matrixInitializerNames.get(currentMatrixInitializerIndex),
+                currentMatrixInitializerIndex
+        ), size * matrix.n, size * matrix.n + size);
 
         context.popMatrix();
     }

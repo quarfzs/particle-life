@@ -1,4 +1,4 @@
-# Clustered Particle System
+# Particle Life
 
 This is an optimized version of [Jeffrey Ventrella's "Clusters"](http://www.ventrella.com/Clusters/), "a particle microworld with ambiguous entities".
 This optimization allows for real-time simulations with **many more particles** and therefore more complex and life-like structures.
@@ -37,7 +37,7 @@ Have a look at
 
 # Matrix Representation
 
-Since the behaviour of particle types here only differs by one number - the attraction factor -, a specific set of rules for *n* particle types can be represented by exactly one *n*-by-*n* matrix. This matrix can be displayed by opening the settings menu and selecting "draw diagram".
+Since the behaviour of particle types here only differs by one number - the attraction factor -, a specific set of rules for *n* particle types can be represented by exactly one *n*-by-*n* matrix. This matrix can be displayed by opening the settings menu and selecting "draw matrix".
 
 Here, the **row** specifies the **reacting** particle type. The **column** specifies the **other** particle type which the particle type is reacting to. The number in that cell is the **attraction factor** for that relation.
 
@@ -49,4 +49,4 @@ Naturally, the main diagonal specifies how much a particle type is attracted to 
 # Probable Future Improvements
 
 - better user interface
-- import / export set of rules as matrix representation
+- parallelization

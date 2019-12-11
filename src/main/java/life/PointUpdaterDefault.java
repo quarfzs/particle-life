@@ -33,7 +33,7 @@ public class PointUpdaterDefault implements PointUpdater {
     }
 
     @Override
-    public void updateWithRelevant(Point point, Iterable<Point> relevantNeighbors) {
+    public void updateWithRelevant(Point point, Iterable<Point> relevantNeighbors, Matrix matrix) {
 
         float interactionRadius2 = rMax * rMax;
         Particle particle = (Particle) point;
@@ -78,7 +78,7 @@ public class PointUpdaterDefault implements PointUpdater {
 //                    float d = (float) Math.sqrt(d2);
                     float d = Helper.sqrt(d2, 5);
 
-                    float a = forceFactor * particle.attractionType.getForce(d, rKern, rMax, particle2.attractionType);
+                    float a = forceFactor * getForce(d, rKern, rMax, matrix.get(particle.type, particle2.type));
                     float factor = a / d * currentDeltaT;
                     particle.vx += dx * factor;
                     particle.vy += dy * factor;
@@ -96,5 +96,18 @@ public class PointUpdaterDefault implements PointUpdater {
             particle.vx += (2 * random.nextFloat() - 1) * heat;
             particle.vy += (2 * random.nextFloat() - 1) * heat;
         }
+    }
+
+    private float getForce(float distance, float rKern, float rMax, float attraction) {
+
+        if (distance < rKern) {
+            return distance / rKern - 1;
+        }
+
+        if (distance < rMax) {
+            return attraction * (1 - Math.abs(2 * distance - rKern - rMax) / (rMax - rKern));
+        }
+
+        return 0;
     }
 }

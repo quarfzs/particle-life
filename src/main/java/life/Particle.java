@@ -7,18 +7,18 @@ public class Particle implements Point {
     float y;
     float vx;
     float vy;
-    AttractionType attractionType;
+    int type;
 
-    public Particle(float x, float y, AttractionType attractionType) {
-        this(x, y, 0, 0, attractionType);
+    public Particle(float x, float y, int type) {
+        this(x, y, 0, 0, type);
     }
 
-    public Particle(float x, float y, float vx, float vy, AttractionType attractionType) {
+    public Particle(float x, float y, float vx, float vy, int type) {
         this.x = x;
         this.y = y;
         this.vx = vx;
         this.vy = vy;
-        this.attractionType = attractionType;
+        this.type = type;
     }
 
     @Override
