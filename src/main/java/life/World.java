@@ -5,6 +5,7 @@ import pointmanagement.PointManager;
 import processing.core.PGraphics;
 
 import javax.swing.*;
+import javax.swing.border.EmptyBorder;
 import java.awt.*;
 import java.util.ArrayList;
 import java.util.Random;
@@ -23,6 +24,7 @@ public class World {
     private float rMax = 40;
     private float particleSize = 2;
     private boolean wrapWorld = true;
+    private int spawnMode = 0;
 
     private AttractionType[] attractionTypes = new AttractionType[6];
 
@@ -122,47 +124,51 @@ public class World {
         }
 
         JFrame frame = new JFrame("Settings");
-
+        Dimension dimen = new Dimension(460, 520);
         frame.setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
-        frame.setSize(350, 850);
-
-        final Container pane = frame.getContentPane();
-        pane.setLayout(new BoxLayout(pane, BoxLayout.Y_AXIS));
+        frame.setSize(dimen);
+        JPanel panel = new JPanel();
+        panel.setBorder(new EmptyBorder(16, 16, 16, 16));
+        panel.setSize(dimen);
+        panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
+        JScrollPane scrollPane = new JScrollPane(panel);
+        frame.getContentPane().add(scrollPane);
 
         class GUIBuilder {
 
             private void addCheckBox(String label, boolean initialSate, OnStateChangedCallback onStateChangedCallback) {
                 JCheckBox checkBox = new JCheckBox(label, initialSate);
                 checkBox.addActionListener(e -> onStateChangedCallback.onStateChanged(checkBox.isSelected()));
-                pane.add(checkBox);
+                panel.add(checkBox);
             }
 
             private void addButton(String text, SimpleCallback onPressed) {
                 JButton button = new JButton(text);
                 button.addActionListener(e -> onPressed.call());
-                pane.add(button);
+                panel.add(button);
             }
 
             private void addSlider(String label, int initialValue, int minValue, int maxValue,
                                    int minorTickSpacing, int majorTickSpacing,
                                    OnValueChangedCallback onValueChangedCallback) {
-                pane.add(Box.createRigidArea(new Dimension(0, 10)));
-                pane.add(new JLabel(label));
+                panel.add(Box.createRigidArea(new Dimension(0, 10)));
+                panel.add(new JLabel(label));
                 JSlider slider = new JSlider(SwingConstants.HORIZONTAL, minValue, maxValue, initialValue);
                 slider.setMajorTickSpacing(majorTickSpacing);
                 slider.setMinorTickSpacing(minorTickSpacing);
                 slider.setPaintTicks(true);
                 slider.setPaintLabels(true);
                 slider.addChangeListener(e -> onValueChangedCallback.onValueChanged(slider.getValue()));
-                pane.add(slider);
+                panel.add(slider);
             }
         }
 
         GUIBuilder c = new GUIBuilder();
 
-        c.addSlider("Number of Types", attractionTypes.length, 1, 17, 0, 1, this::requestAttractionTypeCount);
+        c.addSlider("Number of Types (Colors)", attractionTypes.length, 1, 17, 0, 1, this::requestAttractionTypeCount);
         c.addSlider("Particle Density (in 1/1000s per pixel)", (int) (particleDensity * 1000), 0, 5, 0, 1, value -> requestedParticleDensity = value / 1000f);
         c.addSlider("Attraction Setter (enable diagram for better understanding)", currentAttractionSetterIndex, 0, attractionSetters.size() - 1, 0, 1, this::requestAttractionSetterIndex);
+        c.addSlider("Spawn Mode", spawnMode, 0, 4, 1, 1, value -> spawnMode = value);
         c.addButton("New World", this::requestReset);
         c.addButton("Stir Up", this::requestRespawn);
         c.addSlider("rKern", (int) rKern, 0, 100, 10, 20, value -> rKern = value);
@@ -357,8 +363,42 @@ public class World {
     private void spawnParticles() {
         for (int i = 0; i < nParticles; i++) {
 
-            float randomX = boxWidth * (float) Math.random();
-            float randomY = boxHeight * (float) Math.random();
+            float randomX;
+            float randomY;
+
+            float radius = Math.min(boxWidth, boxHeight) / 3;
+            switch (spawnMode) {
+                case 1: {
+                    double angle = 2 * Math.PI * Math.random();
+                    float r = radius * (float) random.nextGaussian();
+                    randomX = boxWidth / 2 + r * (float) Math.cos(angle);
+                    randomY = boxHeight / 2 + r * (float) Math.sin(angle);
+                    break;
+                } case 2: {
+                    double angle = 2 * Math.PI * Math.random();
+                    float r = radius * (float) Math.sqrt(Math.random());
+                    randomX = boxWidth / 2 + r * (float) Math.cos(angle);
+                    randomY = boxHeight / 2 + r * (float) Math.sin(angle);
+                    break;
+                } case 3: {
+                    double angle = 2 * Math.PI * Math.random();
+                    float r = radius * (float) Math.random();
+                    randomX = boxWidth / 2 + r * (float) Math.cos(angle);
+                    randomY = boxHeight / 2 + r * (float) Math.sin(angle);
+                    break;
+                } case 4: {
+                    double f = Math.random();
+                    double angle = 2 * Math.PI * f;
+                    float r = radius * (float) Math.sqrt(f) + radius * 0.1f * (float) Math.random();
+                    randomX = boxWidth / 2 + r * (float) Math.cos(angle);
+                    randomY = boxHeight / 2 + r * (float) Math.sin(angle);
+                    break;
+                } default: {
+                    randomX = boxWidth * (float) Math.random();
+                    randomY = boxHeight * (float) Math.random();
+                    break;
+                }
+            }
 
             AttractionType randomAttractionType = attractionTypes[random.nextInt(attractionTypes.length)];
 
