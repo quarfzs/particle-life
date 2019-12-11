@@ -5,7 +5,7 @@ This optimization allows for real-time simulations with **many more particles** 
 
 This version is (compared to similar projects):
 - **simpler**: behaviour of particle types (colors) only differs by one number (attraction factor) - the radii etc. are universal,
-- **faster**: grid-based storage of particles behind the scenes allows for linear comlexity *O(n)* instead of quadratic complexity *O(n²)* when updating physics,
+- **faster**: grid-based storage of particles behind the scenes allows for linear complexity *O(n)* instead of quadratic complexity *O(n²)* when updating physics,
 - **and therefore more fascinating**: thousands of particles can form much more life-like structures than only a few hundred.
 
 # Usage
