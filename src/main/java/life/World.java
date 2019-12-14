@@ -175,6 +175,25 @@ public class World {
         c.addSlider("Spawn Mode", spawnMode, 0, 4, 1, 1, value -> spawnMode = value);
         c.addButton("New World", this::requestReset);
         c.addButton("Stir Up", this::requestRespawn);
+        {
+            final JTextArea matrixTextArea = new JTextArea(6, 24);
+            JScrollPane matrixScrollPane = new JScrollPane(matrixTextArea);
+            panel.add(matrixScrollPane);
+
+            c.addButton("Apply Matrix", () -> {
+                Matrix m = MatrixParser.parseMatrix(matrixTextArea.getText());
+                if (m != null) {
+                    requestMatrix(m);
+                }
+            });
+            c.addButton("Get Matrix", () -> matrixTextArea.setText(MatrixParser.matrixToString(matrix)));
+            c.addButton("Round & Format", () -> {
+                Matrix m = MatrixParser.parseMatrix(matrixTextArea.getText());
+                if (m != null) {
+                    matrixTextArea.setText(MatrixParser.matrixToStringRoundAndFormat(m));
+                }
+            });
+        }
         c.addSlider("rKern", (int) rKern, 0, 100, 10, 20, value -> rKern = value);
         c.addSlider("rMax ( > rKern!)", (int) rMax, 10, 100, 10, 20, this::requestNewRMax);
         c.addSlider("Heat", (int) heat, 0, 100, 10, 20, value -> heat = value);
@@ -187,20 +206,12 @@ public class World {
         c.addCheckBox("Draw Rendering Stats", drawRenderingStats, state -> drawRenderingStats = state);
         c.addButton("Save Screenshot", this::requestScreenshot);
 
-        final JTextArea matrixTextArea = new JTextArea(6, 24);
-        JScrollPane matrixScrollPane = new JScrollPane(matrixTextArea);
-        panel.add(matrixScrollPane);
-
-        c.addButton("Apply Matrix", () -> {
-            Matrix m = MatrixParser.parseMatrix(matrixTextArea.getText());
-            if (m != null) {
-                requestMatrix(m);
-            }
-        });
-        c.addButton("Get Matrix", () -> matrixTextArea.setText(MatrixParser.matrixToString(matrix)));
-
         frame.setVisible(true);
-        frame.setLocationRelativeTo(null);  // center window on screen
+        //frame.setLocationRelativeTo(null);  // center window on screen
+        frame.setLocation(
+                Math.min(Math.max(0, (int) mouseX - frame.getWidth() / 2), (int) boxWidth - frame.getWidth()),
+                Math.min(Math.max(0, (int) mouseY - frame.getHeight() / 2), (int) boxHeight - frame.getHeight())
+        );
         settingsJFrame = frame;
     }
 
@@ -404,11 +415,7 @@ public class World {
                 openSettingsGUI();
                 break;
             case 'f':
-                if (camera.isFollowing()) {
-                    camera.stopFollow();
-                } else {
-                    camera.startFollow(pm, mouseX, mouseY, cameraFocusSelectionRadius, wrapWorld);
-                }
+                toggleCameraFollow();
                 break;
         }
     }
@@ -417,12 +424,20 @@ public class World {
         setNewMousePos(x, y);
     }
 
-    public void mousePressed() {
-        mousePressed = true;
+    public void mousePressed(int button) {
+        if (button == 0) {
+            mousePressed = true;
+        } else if (button == 1) {
+            toggleCameraFollow();
+        } else if (button == 2) {
+            openSettingsGUI();
+        }
     }
 
-    public void mouseReleased() {
-        mousePressed = false;
+    public void mouseReleased(int button) {
+        if (button == 0) {
+            mousePressed = false;
+        }
     }
 
     private void setNewMousePos(float x, float y) {
@@ -435,6 +450,14 @@ public class World {
             // accumulate drag if mouse position events are called multiple times between two update calls
             pendingDragX += mouseX - mouseXBefore;
             pendingDragY += mouseY - mouseYBefore;
+        }
+    }
+
+    private void toggleCameraFollow() {
+        if (camera.isFollowing()) {
+            camera.stopFollow();
+        } else {
+            camera.startFollow(pm, mouseX, mouseY, cameraFocusSelectionRadius, wrapWorld);
         }
     }
 
@@ -452,11 +475,14 @@ public class World {
         }
 
         if (requestedMatrix != null) {
+            boolean matrixSizeChanged = requestedMatrix.n != matrix.n;
             matrix = requestedMatrix;
             requestedMatrix = null;
             nextMatrixSize = matrix.n;
-            calcColors();
-            respawn();
+            if (matrixSizeChanged) {
+                calcColors();
+                respawn();
+            }
         }
 
         if (nextMatrixSize != matrix.n) {
@@ -574,11 +600,13 @@ public class World {
             context.popStyle();
         }
 
-        context.pushStyle();
-        context.textAlign(context.RIGHT, context.BOTTOM);
-        context.fill(255);
-        context.text(nParticles, context.width, context.height);
-        context.popStyle();
+        if (drawRenderingStats) {
+            context.pushStyle();
+            context.textAlign(context.RIGHT, context.BOTTOM);
+            context.fill(255);
+            context.text(nParticles, context.width, context.height);
+            context.popStyle();
+        }
     }
 
     public void drawParticles(PGraphics context) {

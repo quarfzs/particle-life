@@ -12,11 +12,12 @@ public class PointUpdaterDefault implements PointUpdater {
     private float rKern;
     private float rMax;
     private float forceFactor;
-    private float friction;
     private float heat;
     private float boxWidth;
     private float boxHeight;
     private float currentDeltaT;
+    private float interactionRadius2;
+    private float oneMinusFrictionDt;
 
     /**
      * call this before calling updateWithRelevant()
@@ -24,18 +25,18 @@ public class PointUpdaterDefault implements PointUpdater {
     void setValues(float rKern, float rMax, float forceFactor, float friction, float heat, float boxWidth, float boxHeight, float dt) {
         this.rKern = rKern;
         this.rMax = rMax;
+        this.interactionRadius2 = rMax * rMax;
         this.forceFactor = forceFactor;
-        this.friction = friction;
         this.heat = heat;
         this.boxWidth = boxWidth;
         this.boxHeight = boxHeight;
         this.currentDeltaT = dt;
+        this.oneMinusFrictionDt = Math.max(0, 1 - friction * currentDeltaT);
     }
 
     @Override
     public void updateWithRelevant(Point point, Iterable<Point> relevantNeighbors, Matrix matrix) {
 
-        float interactionRadius2 = rMax * rMax;
         Particle particle = (Particle) point;
 
         for (Point point2 : relevantNeighbors) {
@@ -75,7 +76,6 @@ public class PointUpdaterDefault implements PointUpdater {
 
                 if (d2 > 0 && d2 < interactionRadius2) {
 
-//                    float d = (float) Math.sqrt(d2);
                     float d = Helper.sqrt(d2, 5);
 
                     float a = forceFactor * getForce(d, rKern, rMax, matrix.get(particle.type, particle2.type));
@@ -87,7 +87,6 @@ public class PointUpdaterDefault implements PointUpdater {
         }
 
         // friction force = -v * friction
-        float oneMinusFrictionDt = 1 - friction * currentDeltaT;
         particle.vx *= oneMinusFrictionDt;
         particle.vy *= oneMinusFrictionDt;
 

@@ -1,6 +1,7 @@
 package life;
 
 import java.util.ArrayList;
+import java.util.Locale;
 
 public final class MatrixParser {
 
@@ -34,15 +35,31 @@ public final class MatrixParser {
     }
 
     public static String matrixToString(Matrix matrix) {
+        return matrixToString(matrix, floatEncoderDefault);
+    }
+
+    public static String matrixToStringRoundAndFormat(Matrix matrix) {
+        return matrixToString(matrix, floatEncoderRoundAndFormat);
+    }
+
+    private static String matrixToString(Matrix matrix, FloatEncoder floatEncoder) {
         StringBuilder sb = new StringBuilder();
         for (int i = 0; i < matrix.n; i++) {
             for (int j = 0; j < matrix.n - 1; j++) {
-                sb.append(matrix.get(i, j));
+                sb.append(floatEncoder.encode(matrix.get(i, j)));
                 sb.append(" ");
             }
-            sb.append(matrix.get(i, matrix.n - 1));
+            sb.append(floatEncoder.encode(matrix.get(i, matrix.n - 1)));
             sb.append("\n");
         }
         return sb.toString();
     }
+
+    private interface FloatEncoder {
+        String encode(float f);
+    }
+
+    private static FloatEncoder floatEncoderDefault = f -> String.format(Locale.US, "%f", f);
+
+    private static FloatEncoder floatEncoderRoundAndFormat = f -> String.format(Locale.US, "%4.1f", f);
 }

@@ -113,12 +113,24 @@ public class Main extends PApplet {
 
     @Override
     public void mousePressed(MouseEvent event) {
-        world.mousePressed();
+        world.mousePressed(translateButton(event.getButton()));
     }
 
     @Override
     public void mouseReleased(MouseEvent event) {
-        world.mouseReleased();
+        world.mouseReleased(translateButton(event.getButton()));
+    }
+
+    private int translateButton(int button) {
+        switch (button) {
+            case 37:
+                return 0;
+            case 3:
+                return 1;
+            case 39:
+                return 2;
+        }
+        return -1;
     }
 
     @Override

@@ -17,8 +17,8 @@ This version is (compared to similar projects):
 - build project and run `Main` class
 
 ## Controls
-- Press "o" to open the settings menu.
-- Press "f" to zoom in (and out) on a certain group of particles while hovering over it with the cursor.
+- Press "o" or right-click to open the settings menu.
+- Press "f" or press the mouse wheel to zoom in (and out) on a certain group of particles while hovering over it with the cursor.
 - Press "r" to create a new world with new rules (or use the "new world" button in the settings menu).
 - Press "s" to randomly redistribute the particles without changing the rules (or use the "stir up" button in the settings menu).
 - Drag with the cursor to move particles.
