@@ -461,8 +461,7 @@ public class World {
         }
     }
 
-    public void update(float dt) {
-
+    public void updateUI() {
         if (screenshotRequested) {
             screenshotRequested = false;
         }
@@ -501,6 +500,9 @@ public class World {
             respawnRequested = false;
             respawn();
         }
+    }
+
+    public void update(float dt) {
 
         pm.recalculate();
 

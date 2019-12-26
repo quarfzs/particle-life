@@ -21,6 +21,8 @@ public class Main extends PApplet {
     private float[] lastDrawTimes = new float[50];
     private int lastDrawTimeIndex = 0;
 
+    private boolean paused = false;
+
     private World world;
     private Camera camera;
 
@@ -107,6 +109,13 @@ public class Main extends PApplet {
     }
 
     @Override
+    public void keyPressed(KeyEvent event) {
+        if (event.getKey() == ' ') {
+            paused ^= true;
+        }
+    }
+
+    @Override
     public void keyReleased(KeyEvent event) {
         world.keyReleased(event.getKey());
     }
@@ -156,7 +165,11 @@ public class Main extends PApplet {
 
         // updating starts here
 
-        world.update(1f / frameRate);
+        world.updateUI();
+
+        if (!paused) {
+            world.update(1f / frameRate);
+        }
 
         // updating ends here
 
