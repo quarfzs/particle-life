@@ -53,8 +53,10 @@ public class World {
 
     private float mouseX = 0;
     private float mouseY = 0;
-    private float pendingDragX = 0;
-    private float pendingDragY = 0;
+    private float lastMouseX = 0;
+    private float lastMouseY = 0;
+//    private float pendingDragX = 0;
+//    private float pendingDragY = 0;
     private boolean mousePressed = false;
     private Camera camera;
     private float cameraFocusSelectionRadius = 25f;
@@ -441,16 +443,8 @@ public class World {
     }
 
     private void setNewMousePos(float x, float y) {
-        float mouseXBefore = mouseX;
-        float mouseYBefore = mouseY;
         mouseX = x;
         mouseY = y;
-
-        if (mousePressed) {
-            // accumulate drag if mouse position events are called multiple times between two update calls
-            pendingDragX += mouseX - mouseXBefore;
-            pendingDragY += mouseY - mouseYBefore;
-        }
     }
 
     private void toggleCameraFollow() {
@@ -516,24 +510,24 @@ public class World {
         if (mousePressed) {
             // drag all particles in a specific radius
 
-            for (Point point : pm.getRelevant(mouseX, mouseY, wrapWorld)) {
+            float dragX = mouseX - lastMouseX;
+            float dragY = mouseY - lastMouseY;
+
+            for (Point point : pm.getRelevant(lastMouseX, lastMouseY, wrapWorld)) {
                 Particle particle = (Particle) point;
 
-                float dx = particle.x - mouseX;
-                float dy = particle.y - mouseY;
+                float dx = particle.x - lastMouseX;
+                float dy = particle.y - lastMouseY;
 
-                if (dx*dx + dy*dy < particleDragSelectionRadius*particleDragSelectionRadius) {
+                if (dx * dx + dy * dy < particleDragSelectionRadius * particleDragSelectionRadius) {
 
                     particle.vx = 0;
                     particle.vy = 0;
 
-                    particle.x += pendingDragX;
-                    particle.y += pendingDragY;
+                    particle.x += dragX;
+                    particle.y += dragY;
                 }
             }
-
-            pendingDragX = 0;
-            pendingDragY = 0;
         }
 
 
@@ -570,7 +564,8 @@ public class World {
             }
         }
 
-        setNewMousePos(mouseX, mouseY);// avoid former mouse position never being updated
+        lastMouseX = mouseX;
+        lastMouseY = mouseY;
     }
 
     public void draw(PGraphics context) {
