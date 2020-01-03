@@ -20,7 +20,7 @@ The fastest version.
 # Flutter Version
 
 - [Download Android App](https://play.google.com/store) `also fast, and better design`
-- [Web Version](https://github.com/quarfzs/particle-life/docs/web/index.html) `slow`
+- [Web Version](web/index.html) `slow`
 - [Source Code](https://github.com/quarfzs/particle-life/tree/master/flutter)
 
 # Explanation & Related Projects
