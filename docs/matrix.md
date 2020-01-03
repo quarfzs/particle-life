@@ -2,7 +2,7 @@
 
 ![Matrix Representation](assets/matrix.png)
 
-Since the behaviour of particle types here only differs by one number - the [attraction factor](force.md) -, a specific set of rules for *n* particle types can be represented by exactly one *n*-by-*n* matrix.
+Since the behaviour of particle types here only differs by one number - the [attraction factor](force.html) -, a specific set of rules for *n* particle types can be represented by exactly one *n*-by-*n* matrix.
 
 If that matrix is the same, the emerging structures will always look and behave similarly.
 
