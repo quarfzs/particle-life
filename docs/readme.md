@@ -4,9 +4,9 @@ This is an optimized version of [Jeffrey Ventrella's "Clusters"](http://www.vent
 This optimization allows for real-time simulations with **many more particles** and therefore more complex and life-like structures.
 
 This version is (compared to similar projects):
-- **simpler**: behaviour of particle types (colors) only differs by one number (attraction factor) - the radii etc. are universal,
 - **faster**: grid-based storage of particles behind the scenes allows for linear complexity *O(n)* instead of quadratic complexity *O(n²)* when updating physics,
-- **and therefore more fascinating**: thousands of particles can form much more life-like structures than only a few hundred.
+- **simpler**: behaviour of particle types (colors) only differs by one number (attraction factor) - the radii etc. are universal,
+- **more fascinating**: thousands of particles can form much more life-like structures than only a few hundred.
 
 There are two projects: A Java Program, and a 
 
@@ -14,7 +14,7 @@ There are two projects: A Java Program, and a
 
 The fastest version.
 
-- [Download JAR](https://github.com/quarfzs/particle-life/docs/java/particle-life.jar) `requires Java to be installed`
+- [Download JAR](https://github.com/quarfzs/particle-life/blob/master/docs/java/particle-life.jar?raw=true) `requires Java to be installed`
 - [Source Code](https://github.com/quarfzs/particle-life/java)
 
 # Flutter Version
@@ -31,6 +31,6 @@ Have a look at
 
 Related projects:
 
-- https://github.com/HackerPoet/Particle-Life
-- https://github.com/fnky/particle-life
+- [github.com/HackerPoet/Particle-Life](https://github.com/HackerPoet/Particle-Life)
+- [github.com/fnky/particle-life](https://github.com/fnky/particle-life)
 
