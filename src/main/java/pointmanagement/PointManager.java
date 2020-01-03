@@ -167,7 +167,12 @@ public class PointManager {
         private AllIterator(boolean wrapWorld, boolean computeRelevant) {
             this.wrapWorld = wrapWorld;
             this.computeRelevant = computeRelevant;
-            step();
+            insidePoints = clusters[clusterIndex].getPointsInside().iterator();
+            if (!insidePoints.hasNext()) {
+                step();
+            } else {
+                computeRelevant();
+            }
         }
 
         @Override
@@ -195,6 +200,10 @@ public class PointManager {
 
             } while (!insidePoints.hasNext());
 
+            computeRelevant();
+        }
+
+        private void computeRelevant() {
             if (computeRelevant) {
                 relevantPoints.clear();
                 getRelevantClusterIndices(clusterX, clusterY, wrapWorld).forEach(
