@@ -23,7 +23,19 @@ The fastest version.
 - [Web Version](web/index.html) `slow`
 - [Source Code](https://github.com/quarfzs/particle-life/tree/master/flutter)
 
-# Explanation & Related Projects
+# Explanation
+
+Every particle has
+- a position
+- a velocity
+- a color
+
+When a particles comes close enough to another particle, it gets repelled or attracted, based on the current set of rules, stored in a [matrix](matrix.html). That applied force follows a [simple concept](force.html).
+
+With these few rules, complex lifelike structures emerge:<br>
+[Structure Catalogue](structures.html)
+
+# Other Projects
 
 Have a look at
 - [this video by "CodeParade"](https://www.youtube.com/watch?v=Z_zmZ23grXE) which explains the principle of this simulation.
