@@ -15,13 +15,13 @@ There are two projects: A Java Program, and a
 The fastest version.
 
 - [Download JAR](https://github.com/quarfzs/particle-life/blob/master/docs/java/particle-life.jar?raw=true) `requires Java to be installed`
-- [Source Code](https://github.com/quarfzs/particle-life/java)
+- [Source Code](https://github.com/quarfzs/particle-life/tree/master/java)
 
 # Flutter Version
 
 - [Download Android App](https://play.google.com/store)
 - [Web Version](https://github.com/quarfzs/particle-life/docs/web/index.html)
-- [Source Code](https://github.com/quarfzs/particle-life/flutter)
+- [Source Code](https://github.com/quarfzs/particle-life/tree/master/flutter)
 
 # Explanation & Related Projects
 
