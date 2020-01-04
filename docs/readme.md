@@ -30,10 +30,10 @@ Every particle has
 - a velocity
 - a color
 
-When a particles comes close enough to another particle, it gets repelled or attracted, based on the current set of rules, stored in a [matrix](matrix.html). That applied force follows a [simple concept](force.html).
+When a particles comes close enough to another particle, it gets repelled or attracted, based on the current set of rules, stored in a [matrix](matrix). That applied force follows a [simple concept](force).
 
 With these few rules, complex lifelike structures emerge:<br>
-[Structure Catalogue](structures.html)
+[Structure Catalogue](structures)
 
 # Other Projects
 
