@@ -19,8 +19,8 @@ The fastest version.
 
 # Flutter Version
 
-- [Download Android App](https://play.google.com/store) `also fast, and better design`
-- [Web Version](web/index.html) `slow`
+- [Web Version](web/index.html) `slow on desktop computers, fast on mobile`
+- Download Android App `coming soon`
 - [Source Code](https://github.com/quarfzs/particle-life/tree/master/flutter)
 
 # Explanation
@@ -30,7 +30,7 @@ Every particle has
 - a velocity
 - a color
 
-When a particles comes close enough to another particle, it gets repelled or attracted, based on the current set of rules, stored in a [matrix](matrix). That applied force follows a [simple concept](force).
+When a particle comes close enough to another particle, it gets repelled or attracted, based on the current set of rules, stored in a [matrix](matrix). That applied force follows a [simple concept](force).
 
 With these few rules, complex lifelike structures emerge:<br>
 [Structure Catalogue](structures)
