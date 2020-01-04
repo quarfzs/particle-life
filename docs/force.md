@@ -1,6 +1,7 @@
 # Force
 
-<iframe src="https://www.desmos.com/calculator/3gkaf5lywv?embed" width="500px" height="500px" style="border: 1px solid #ccc" frameborder=0></iframe>
+Click here to play with the force graph:
+[![Force Graph](assets/desmos-graph.png)](force-graph)
 
 ## Implementation
 
