@@ -1,7 +1,6 @@
-import life.Camera;
-import life.ColorMaker;
-import life.Helper;
-import life.World;
+import frontend.ColorMaker;
+import frontend.Helper;
+import frontend.Renderer;
 import processing.core.PApplet;
 import processing.core.PFont;
 import processing.core.PImage;
@@ -21,10 +20,7 @@ public class Main extends PApplet {
     private float[] lastDrawTimes = new float[50];
     private int lastDrawTimeIndex = 0;
 
-    private boolean paused = false;
-
-    private World world;
-    private Camera camera;
+    private Renderer renderer;
 
     public static void main(String[] args) {
         PApplet.main(Main.class.getName());
@@ -47,8 +43,6 @@ public class Main extends PApplet {
 
         PFont mono = createFont("Consolas", 18, false);
         textFont(mono);
-
-        camera = new Camera(width/2f, height/2f);
 
         ColorMaker subtractiveColorMaker = new ColorMaker() {
 
@@ -100,37 +94,35 @@ public class Main extends PApplet {
             }
         };
 
-        world = new World(width, height, camera, subtractiveColorMaker);
+        renderer = new Renderer(width, height, subtractiveColorMaker);
     }
 
     @Override
     public void stop() {
-        world.stop();
-    }
-
-    @Override
-    public void keyPressed(KeyEvent event) {
-        if (event.getKey() == ' ') {
-            paused ^= true;
-        }
+        renderer.stop();
     }
 
     @Override
     public void keyReleased(KeyEvent event) {
-        world.keyReleased(event.getKey());
+        renderer.keyReleased(event.getKey());
     }
 
     @Override
     public void mousePressed(MouseEvent event) {
-        world.mousePressed(translateButton(event.getButton()));
+        renderer.mousePressed(translateMouseButton(event.getButton()));
+    }
+
+    @Override
+    public void mouseWheel(MouseEvent event) {
+        renderer.mouseScrolled(Math.signum(event.getCount()) * event.getY());
     }
 
     @Override
     public void mouseReleased(MouseEvent event) {
-        world.mouseReleased(translateButton(event.getButton()));
+        renderer.mouseReleased(translateMouseButton(event.getButton()));
     }
 
-    private int translateButton(int button) {
+    private int translateMouseButton(int button) {
         switch (button) {
             case 37:
                 return 0;
@@ -144,49 +136,33 @@ public class Main extends PApplet {
 
     @Override
     public void mouseMoved(MouseEvent event) {
-        world.mouseMoved(event.getX(), event.getY());
+        renderer.mouseMoved(event.getX(), event.getY());
     }
 
     @Override
     public void mouseDragged(MouseEvent event) {
-        world.mouseMoved(event.getX(), event.getY());
+        renderer.mouseMoved(event.getX(), event.getY());
     }
 
     @Override
     public void draw() {
 
-        if (world.isScreenshotRequested()) {
+        if (renderer.isScreenshotRequested()) {
             background(0);
-            world.drawParticles(g);
+            renderer.drawParticles(g);
             saveScreenshot(g.copy());
         }
 
         long t1 = System.nanoTime();
 
-        // updating starts here
-
-        world.updateUI();
-
-        if (!paused) {
-            world.update(1f / frameRate);
-        }
-
-        // updating ends here
+        renderer.update(1f / frameRate);
 
         long t2 = System.nanoTime();
 
         // rendering starts here
-
-        camera.update(1f / frameRate);
+        renderer.updateUI(1f / frameRate);
         background(0);
-
-        pushStyle();
-        pushMatrix();
-        camera.apply(g);
-        world.draw(g);
-        popMatrix();
-        popStyle();
-
+        renderer.draw(g);
         // rendering ends here
 
         long t3 = System.nanoTime();
@@ -194,7 +170,7 @@ public class Main extends PApplet {
         float timeUpdate = (t2 - t1) / 1000000.f;
         float timeDraw = (t3 - t2) / 1000000.f;
 
-        if (world.shouldDrawRenderingStats()) {
+        if (renderer.shouldDrawRenderingStats()) {
 
             lastUpdateTimes[lastUpdateTimeIndex] = timeUpdate;
             lastUpdateTimeIndex = (lastUpdateTimeIndex+=1) % lastUpdateTimes.length;

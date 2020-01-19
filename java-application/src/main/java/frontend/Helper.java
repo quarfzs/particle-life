@@ -1,4 +1,4 @@
-package life;
+package frontend;
 
 public class Helper {
     public static float modulo(float a, float b) {

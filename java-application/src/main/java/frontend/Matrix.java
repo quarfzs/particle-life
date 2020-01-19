@@ -1,10 +1,10 @@
-package life;
+package frontend;
 
-public class Matrix {
-    public final int n;
+public class Matrix implements logic.Matrix {
+    private final int n;
     private final float[][] m;
 
-    public Matrix(int n, Initializer initializer) {
+    Matrix(int n, Initializer initializer) {
         this.n = n;
         initializer.init(n);
         m = new float[n][];
@@ -14,6 +14,11 @@ public class Matrix {
                 m[i][j] = initializer.getValue(i, j);
             }
         }
+    }
+
+    @Override
+    public int size() {
+        return n;
     }
 
     public float get(int i, int j) {

@@ -1,7 +1,6 @@
-package life;
+package frontend;
 
-import pointmanagement.Point;
-import pointmanagement.PointManager;
+import logic.Updater;
 import processing.core.PGraphics;
 
 import java.util.ArrayList;
@@ -15,10 +14,10 @@ public class Camera {
     private float nextScale = 1;
 
     private boolean following = false;
-    private final int MAX_FOCUS_POOL_SIZE = 50;
-    private final int MIN_FOCUS_POOL_SIZE = 5;
-    private final float MAX_FOCUS_DEVIATION = 150;
-    private ArrayList<Point> focusPool = new ArrayList<>(MAX_FOCUS_POOL_SIZE);
+    private static final int MAX_FOCUS_POOL_SIZE = 50;
+    private static final int MIN_FOCUS_POOL_SIZE = 5;
+    private static final float MAX_FOCUS_DEVIATION = 150;
+    private ArrayList<Integer> focusPool = new ArrayList<>(MAX_FOCUS_POOL_SIZE);  // indices
     private float focusX;
     private float focusY;
     private float nextFocusX;
@@ -36,13 +35,15 @@ public class Camera {
         focusY = nextFocusY;
     }
 
-    public void update(float dt) {
+    public void update(Updater updater, float dt) {
+        float[] positions = updater.getPositions();
+
         if (following && focusPool.size() > 0) {
             nextFocusX = 0;
             nextFocusY = 0;
-            for (Point p : focusPool) {
-                nextFocusX += p.getX();
-                nextFocusY += p.getY();
+            for (int index : focusPool) {
+                nextFocusX += positions[index * 2];
+                nextFocusY += positions[index * 2 + 1];
             }
 
             nextFocusX /= focusPool.size();
@@ -50,8 +51,8 @@ public class Camera {
 
             // cancel following if focus pool is too spread out
             float xdev = 0;
-            for (Point p : focusPool) {
-                float dx = p.getX() - nextFocusX;
+            for (int index : focusPool) {
+                float dx = positions[index * 2] - nextFocusX;
                 xdev += dx*dx;
             }
             if (Math.sqrt(xdev / focusPool.size()) > MAX_FOCUS_DEVIATION) {
@@ -69,36 +70,39 @@ public class Camera {
         focusY = nextFocusY + (focusY - nextFocusY) * f;
     }
 
-    public float getScale() {
+    float getScale() {
         return scale;
     }
 
-    public float getFocusX() {
+    float getFocusX() {
         return focusX;
     }
 
-    public float getFocusY() {
+    float getFocusY() {
         return focusY;
     }
 
-    public boolean isFollowing() {
+    boolean isFollowing() {
         return following;
     }
 
-    public void startFollow(PointManager pm, float x, float y, float radius, boolean wrapWorld) {
+    void startFollow(Updater updater, float x, float y, float radius, boolean wrap) {
+
+        float[] positions = updater.getPositions();
 
         float r_2 = radius*radius;
 
         focusPool.clear();
-        for (Object o: pm.getRelevant(x, y, wrapWorld)) {
+        for (int index : updater.getRelevant(x, y, radius, wrap)) {
+
             if (focusPool.size() > MAX_FOCUS_POOL_SIZE) {
                 break;
             }
-            Point p = (Point) o;
-            float dx = p.getX() - x;
-            float dy = p.getY() - y;
-            if (dx*dx + dy*dy < r_2) {
-                focusPool.add(p);
+
+            float dx = positions[index * 2] - x;
+            float dy = positions[index * 2 + 1] - y;
+            if (dx * dx + dy * dy < r_2) {
+                focusPool.add(index);
             }
         }
 
@@ -110,7 +114,7 @@ public class Camera {
         }
     }
 
-    public void stopFollow() {
+    void stopFollow() {
         following = false;
         nextFocusX = centerX;
         nextFocusY = centerY;

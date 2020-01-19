@@ -1,4 +1,4 @@
-package life;
+package frontend;
 
 import java.util.ArrayList;
 import java.util.Locale;
@@ -44,12 +44,12 @@ public final class MatrixParser {
 
     private static String matrixToString(Matrix matrix, FloatEncoder floatEncoder) {
         StringBuilder sb = new StringBuilder();
-        for (int i = 0; i < matrix.n; i++) {
-            for (int j = 0; j < matrix.n - 1; j++) {
+        for (int i = 0; i < matrix.size(); i++) {
+            for (int j = 0; j < matrix.size() - 1; j++) {
                 sb.append(floatEncoder.encode(matrix.get(i, j)));
                 sb.append(" ");
             }
-            sb.append(floatEncoder.encode(matrix.get(i, matrix.n - 1)));
+            sb.append(floatEncoder.encode(matrix.get(i, matrix.size() - 1)));
             sb.append("\n");
         }
         return sb.toString();

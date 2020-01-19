@@ -1,4 +1,4 @@
-package life;
+package frontend;
 
 public interface ColorMaker {
     int rgb(float r, float g, float b);

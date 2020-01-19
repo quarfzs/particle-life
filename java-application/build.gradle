@@ -2,8 +2,7 @@ plugins {
     id 'java'
 }
 
-group 'com.quarfzs'
-version '1.0'
+version 'unspecified'
 
 sourceCompatibility = 1.8
 
@@ -12,6 +11,5 @@ repositories {
 }
 
 dependencies {
-    // https://mvnrepository.com/artifact/org.processing/core
     compile group: 'org.processing', name: 'core', version: '3.3.7'
 }

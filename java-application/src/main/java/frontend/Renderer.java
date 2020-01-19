@@ -1,7 +1,7 @@
-package life;
+package frontend;
 
-import pointmanagement.Point;
-import pointmanagement.PointManager;
+import logic.Settings;
+import logic.Updater;
 import processing.core.PGraphics;
 
 import javax.swing.*;
@@ -11,26 +11,22 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Random;
 
-public class World {
+public class Renderer {
 
-    private static final float boxMargin = 10f;
+    private boolean paused = false;
+    private boolean useFixedTimeStep = false;
+    private int fixedTimeStepValueMillis = 16;
+
     private float particleDensity = 0.002f;
-    private float boxWidth;
-    private float boxHeight;
-    private float friction = 9f;
-    private float heat = 0f;
-    private float forceFactor = 950f;
     private int nParticles;
-    private float rKern = 10;
-    private float rMax = 40;
     private float particleSize = 2;
-    private boolean wrapWorld = true;
     private int spawnMode = 0;
+    
+    private Settings settings = new Settings();
 
     private Matrix matrix;
     private Matrix requestedMatrix = null;
     private int nextMatrixSize = 6;
-    private HashMap<Integer, Integer> typeColorMap;
     private ArrayList<Matrix.Initializer> matrixInitializers = new ArrayList<>();
     private ArrayList<String> matrixInitializerNames = new ArrayList<>();
     private int currentMatrixInitializerIndex = 0;
@@ -38,16 +34,12 @@ public class World {
 
     private Random random = new Random();
     private ColorMaker colorMaker;
-
-    private PointManager pm;
-    private PointUpdaterDefault pointUpdater = new PointUpdaterDefault();
+    private HashMap<Integer, Integer> typeColorMap;
 
     private boolean resetRequested = false;
     private boolean respawnRequested = false;
-    private float requestedRMax = rMax;
     private float requestedParticleDensity = particleDensity;
 
-    private boolean drawParticleManager = false;
     private boolean drawForceDiagram = false;
     private boolean drawRenderingStats = false;
 
@@ -55,54 +47,54 @@ public class World {
     private float mouseY = 0;
     private float lastMouseX = 0;
     private float lastMouseY = 0;
-//    private float pendingDragX = 0;
-//    private float pendingDragY = 0;
     private boolean mousePressed = false;
     private Camera camera;
-    private float cameraFocusSelectionRadius = 25f;
+    private float cameraFocusSelectionRadius = 25;
 
-    private float particleDragSelectionRadius = 25f;
-
-
+    private float particleDragSelectionRadius = 25;
 
     private boolean screenshotRequested = false;
 
+    private Updater updater;
+
+    private float windowWidth;
+    private float windowHeight;
+
     private JFrame settingsJFrame = null;
 
-    public World(float width, float height, Camera camera, ColorMaker colorMaker) {
+    public Renderer(float width, float height, ColorMaker colorMaker) {
 
-        this.camera = camera;
-        boxWidth = width;
-        boxHeight = height;
+        this.windowWidth = width;
+        this.windowHeight = height;
         this.colorMaker = colorMaker;
 
+        this.camera = new Camera(width / 2f, height / 2f);
+
+        initAttractionSetters();
+        makeMatrix();
+        calcColors();
+
+        this.updater = new MultithreadedUpdater();
+        settings.setRange(width, height);
+        settings.setMatrix(matrix);
+        resetUpdaterSettings();
+
         nParticles = calcParticleCount();
-        System.out.printf("number of particles: %d%n", nParticles);
-        System.out.printf("Radius of interaction: %.1f%n", rMax);
 
-        pm = createNewPointManager();
-
-        init();
+        spawnParticles();
     }
 
     private int calcParticleCount() {
-        return (int) (particleDensity * boxWidth * boxHeight);
+        return (int) (particleDensity * settings.getRangeX() * settings.getRangeY());
     }
 
-    private PointManager createNewPointManager() {
-        return new PointManager(rMax, particleDensity, 0, boxWidth, 0, boxHeight);
-    }
-
-    /**
-     * create new point manager, but keep the particles
-     */
-    private void recreatePointManager() {
-        PointManager oldPointManager = pm;
-        pm = createNewPointManager();
-        PointManager.AllIterator all = oldPointManager.getAllWithRelevant(wrapWorld);
-        while (all.hasNext()) {
-            pm.add(all.next());
-        }
+    private void resetUpdaterSettings() {
+        settings.setForceFactor(950);
+        settings.setFriction(9);
+        settings.setHeat(0);
+        settings.setRMin(10);
+        settings.setRMax(40);
+        settings.setWrap(true);
     }
 
     private interface OnStateChangedCallback {
@@ -138,6 +130,7 @@ public class World {
         panel.setSize(dimen);
         panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
         JScrollPane scrollPane = new JScrollPane(panel);
+        scrollPane.getVerticalScrollBar().setUnitIncrement(16);  // faster scrolling
         frame.getContentPane().add(scrollPane);
 
         class GUIBuilder {
@@ -154,9 +147,8 @@ public class World {
                 panel.add(button);
             }
 
-            private void addSlider(String label, int initialValue, int minValue, int maxValue,
-                                   int minorTickSpacing, int majorTickSpacing,
-                                   OnValueChangedCallback onValueChangedCallback) {
+            private void addSlider(String label, int initialValue, OnValueChangedCallback onValueChangedCallback,
+                                   int minValue, int maxValue, int minorTickSpacing, int majorTickSpacing) {
                 panel.add(Box.createRigidArea(new Dimension(0, 10)));
                 panel.add(new JLabel(label));
                 JSlider slider = new JSlider(SwingConstants.HORIZONTAL, minValue, maxValue, initialValue);
@@ -171,10 +163,10 @@ public class World {
 
         GUIBuilder c = new GUIBuilder();
 
-        c.addSlider("Number of Types (Colors)", nextMatrixSize, 1, 17, 0, 1, this::requestMatrixSize);
-        c.addSlider("Particle Density (in 1/1000s per pixel)", (int) (particleDensity * 1000), 0, 5, 0, 1, value -> requestedParticleDensity = value / 1000f);
-        c.addSlider("Matrix Initializer (enable diagram for better understanding)", currentMatrixInitializerIndex, 0, matrixInitializers.size() - 1, 0, 1, this::requestMatrixInitializerIndex);
-        c.addSlider("Spawn Mode", spawnMode, 0, 4, 1, 1, value -> spawnMode = value);
+        c.addSlider("Number of Types (Colors)", nextMatrixSize, this::requestMatrixSize, 1, 17, 0, 1);
+        c.addSlider("Particle Density (in 1/1000s per pixel)", (int) (particleDensity * 4000), value -> requestedParticleDensity = value / 4000f, 0, 50, 1, 5);
+        c.addSlider("Matrix Initializer (enable diagram for better understanding)", currentMatrixInitializerIndex, this::requestMatrixInitializerIndex, 0, matrixInitializers.size() - 1, 0, 1);
+        c.addSlider("Spawn Mode", spawnMode, value -> spawnMode = value, 0, 4, 1, 1);
         c.addButton("New World", this::requestReset);
         c.addButton("Stir Up", this::requestRespawn);
         {
@@ -196,23 +188,25 @@ public class World {
                 }
             });
         }
-        c.addSlider("rKern", (int) rKern, 0, 100, 10, 20, value -> rKern = value);
-        c.addSlider("rMax ( > rKern!)", (int) rMax, 10, 100, 10, 20, this::requestNewRMax);
-        c.addSlider("Heat", (int) heat, 0, 100, 10, 20, value -> heat = value);
-        c.addSlider("Friction", (int) friction, 0, 100, 10, 20, value -> friction = value);
-        c.addSlider("Force Factor", (int) forceFactor, 0, 10000, 500, 2000, value -> forceFactor = value);
-        c.addSlider("Particle Size on Screen", (int) particleSize, 1, 5, 0, 1, value -> particleSize = value);
-        c.addCheckBox("Wrap World", wrapWorld, state -> wrapWorld = state);
+        c.addSlider("rKern", (int) settings.getRMin(), settings::setRMin, 0, 100, 10, 20);
+        c.addSlider("rMax ( > rKern!)", (int) settings.getRMax(), settings::setRMax, 10, 100, 10, 20);
+        c.addSlider("Heat", (int) settings.getHeat(), settings::setHeat, 0, 200, 10, 50);
+        c.addSlider("Friction", (int) settings.getFriction(), settings::setFriction, 0, 60, 5, 10);
+        c.addSlider("Force Factor", (int) settings.getForceFactor(), settings::setForceFactor, 0, 1500, 50, 250);
+        c.addSlider("Particle Size on Screen", (int) particleSize, value -> particleSize = value, 1, 5, 0, 1);
+        c.addCheckBox("Wrap World", settings.isWrap(), settings::setWrap);
         c.addCheckBox("Draw Matrix", drawForceDiagram, state -> drawForceDiagram = state);
-        c.addCheckBox("Draw Containers", drawParticleManager, state -> drawParticleManager = state);
         c.addCheckBox("Draw Rendering Stats", drawRenderingStats, state -> drawRenderingStats = state);
         c.addButton("Save Screenshot", this::requestScreenshot);
+        c.addCheckBox("Use Fixed Timestep", useFixedTimeStep, state -> useFixedTimeStep = state);
+        c.addSlider("Fixed TimeStep (ms)", fixedTimeStepValueMillis, value -> fixedTimeStepValueMillis = value,
+                1, 100, 1, 10);
 
         frame.setVisible(true);
         //frame.setLocationRelativeTo(null);  // center window on screen
         frame.setLocation(
-                Math.min(Math.max(0, (int) mouseX - frame.getWidth() / 2), (int) boxWidth - frame.getWidth()),
-                Math.min(Math.max(0, (int) mouseY - frame.getHeight() / 2), (int) boxHeight - frame.getHeight())
+                Math.min(Math.max(0, (int) mouseX - frame.getWidth() / 2), (int) windowWidth - frame.getWidth()),
+                Math.min(Math.max(0, (int) mouseY - frame.getHeight() / 2), (int) windowHeight - frame.getHeight())
         );
         settingsJFrame = frame;
     }
@@ -221,17 +215,6 @@ public class World {
         if (settingsJFrame != null) {
             settingsJFrame.dispose();
         }
-    }
-
-    private void init() {
-        initAttractionSetters();
-        makeMatrix();
-        calcColors();
-        spawnParticles();
-    }
-
-    private void requestNewRMax(float newRMax) {
-        requestedRMax = newRMax;
     }
 
     private void requestMatrixSize(int matrixSize) {
@@ -257,15 +240,14 @@ public class World {
     }
 
     private void reset() {
-        pm.clear();
         makeMatrix();
+        settings.setMatrix(matrix);
         calcColors();
         spawnParticles();
         camera.stopFollow();
     }
 
     private void respawn() {
-        pm.clear();
         spawnParticles();
         camera.stopFollow();
     }
@@ -346,10 +328,10 @@ public class World {
     }
 
     private void calcColors() {
-        typeColorMap = new HashMap<>(matrix.n);
-        for (int type = 0; type < matrix.n; type++) {
+        typeColorMap = new HashMap<>(matrix.size());
+        for (int type = 0; type < matrix.size(); type++) {
             typeColorMap.put(type, colorMaker.hsb(
-                    type / (float) matrix.n,
+                    type / (float) matrix.size(),
                     1,
                     1
             ));
@@ -358,47 +340,69 @@ public class World {
 
 
     private void spawnParticles() {
-        for (int i = 0; i < nParticles; i++) {
+
+        int[] types = new int[nParticles];
+        float[] positions = new float[nParticles * 2];
+        float[] velocities = new float[nParticles * 2];
+
+        float rangeX = settings.getRangeX();
+        float rangeY = settings.getRangeY();
+
+        int typeIndex = 0;
+        int positionIndex = 0;
+
+        while (positionIndex < positions.length) {
 
             float randomX;
             float randomY;
 
-            float radius = Math.min(boxWidth, boxHeight) / 3;
+            float radius = Math.min(rangeX, rangeY) / 3;
             switch (spawnMode) {
                 case 1: {
                     double angle = 2 * Math.PI * Math.random();
                     float r = radius * (float) random.nextGaussian();
-                    randomX = boxWidth / 2 + r * (float) Math.cos(angle);
-                    randomY = boxHeight / 2 + r * (float) Math.sin(angle);
+                    randomX = rangeX / 2 + r * (float) Math.cos(angle);
+                    randomY = rangeY / 2 + r * (float) Math.sin(angle);
                     break;
                 } case 2: {
                     double angle = 2 * Math.PI * Math.random();
                     float r = radius * (float) Math.sqrt(Math.random());
-                    randomX = boxWidth / 2 + r * (float) Math.cos(angle);
-                    randomY = boxHeight / 2 + r * (float) Math.sin(angle);
+                    randomX = rangeX / 2 + r * (float) Math.cos(angle);
+                    randomY = rangeY / 2 + r * (float) Math.sin(angle);
                     break;
                 } case 3: {
                     double angle = 2 * Math.PI * Math.random();
                     float r = radius * (float) Math.random();
-                    randomX = boxWidth / 2 + r * (float) Math.cos(angle);
-                    randomY = boxHeight / 2 + r * (float) Math.sin(angle);
+                    randomX = rangeX / 2 + r * (float) Math.cos(angle);
+                    randomY = rangeY / 2 + r * (float) Math.sin(angle);
                     break;
                 } case 4: {
                     double f = Math.random();
                     double angle = 2 * Math.PI * f;
                     float r = radius * (float) Math.sqrt(f) + radius * 0.1f * (float) Math.random();
-                    randomX = boxWidth / 2 + r * (float) Math.cos(angle);
-                    randomY = boxHeight / 2 + r * (float) Math.sin(angle);
+                    randomX = rangeX / 2 + r * (float) Math.cos(angle);
+                    randomY = rangeY / 2 + r * (float) Math.sin(angle);
                     break;
                 } default: {
-                    randomX = boxWidth * (float) Math.random();
-                    randomY = boxHeight * (float) Math.random();
+                    randomX = rangeX * (float) Math.random();
+                    randomY = rangeY * (float) Math.random();
                     break;
                 }
             }
 
-            pm.add(new Particle(randomX, randomY, random.nextInt(matrix.n)));
+            types[typeIndex] = random.nextInt(matrix.size());
+            positions[positionIndex] = randomX;
+            positions[positionIndex + 1] = randomY;
+            velocities[positionIndex] = 0;
+            velocities[positionIndex + 1] = 0;
+
+            typeIndex += 1;
+            positionIndex += 2;
         }
+
+        updater.setTypes(types);
+        updater.setPositions(positions);
+        updater.setVelocities(velocities);
     }
 
     private void requestMatrixInitializerIndex(int index) {
@@ -419,7 +423,15 @@ public class World {
             case 'f':
                 toggleCameraFollow();
                 break;
+            case ' ':
+                paused ^= true;
         }
+    }
+
+    public void mouseScrolled(float pixels) {
+        particleDragSelectionRadius *= (float) Math.pow(2, pixels / 2000);
+        particleDragSelectionRadius = Math.max(particleDragSelectionRadius, 0.1f);
+        particleDragSelectionRadius = Math.min(particleDragSelectionRadius, 2 * Math.max(windowWidth, windowHeight));
     }
 
     public void mouseMoved(float x, float y) {
@@ -451,34 +463,33 @@ public class World {
         if (camera.isFollowing()) {
             camera.stopFollow();
         } else {
-            camera.startFollow(pm, mouseX, mouseY, cameraFocusSelectionRadius, wrapWorld);
+            camera.startFollow(updater, mouseX, mouseY, cameraFocusSelectionRadius, settings.isWrap());
         }
     }
 
-    public void updateUI() {
+    public void updateUI(float dt) {
         if (screenshotRequested) {
             screenshotRequested = false;
         }
 
-        if (requestedRMax != rMax || requestedParticleDensity != particleDensity) {
-            rMax = requestedRMax;
+        if (requestedParticleDensity != particleDensity) {
             particleDensity = requestedParticleDensity;
             nParticles = calcParticleCount();
-            recreatePointManager();
         }
 
         if (requestedMatrix != null) {
-            boolean matrixSizeChanged = requestedMatrix.n != matrix.n;
+            boolean matrixSizeChanged = requestedMatrix.size() != matrix.size();
             matrix = requestedMatrix;
             requestedMatrix = null;
-            nextMatrixSize = matrix.n;
+            nextMatrixSize = matrix.size();
+            settings.setMatrix(matrix);
             if (matrixSizeChanged) {
                 calcColors();
                 respawn();
             }
         }
 
-        if (nextMatrixSize != matrix.n) {
+        if (nextMatrixSize != matrix.size()) {
             requestReset();
         }
 
@@ -494,72 +505,84 @@ public class World {
             respawnRequested = false;
             respawn();
         }
+
+        camera.update(updater, dt);
     }
 
     public void update(float dt) {
 
-        pm.recalculate();
-
-        pointUpdater.setValues(rKern, rMax, forceFactor, friction, heat, boxWidth, boxHeight, dt);
-
-        PointManager.AllIterator all = pm.getAllWithRelevant(wrapWorld);
-        while (all.hasNext()) {
-            pointUpdater.updateWithRelevant(all.next(), all.getRelevant(), matrix);
+        if (!paused) {
+            if (useFixedTimeStep) {
+                settings.setDt(fixedTimeStepValueMillis / 1000f);
+            } else {
+                settings.setDt(dt);
+            }
+            updater.updateVelocities(settings);
         }
 
+        applyDrag();
+
+        if (!paused) {
+            updater.updatePositions(settings);
+        }
+    }
+
+    private void applyDrag() {
         if (mousePressed) {
             // drag all particles in a specific radius
+
+            float[] positions = updater.getPositions();
+            float[] velocities = updater.getVelocities();
 
             float dragX = mouseX - lastMouseX;
             float dragY = mouseY - lastMouseY;
 
-            for (Point point : pm.getRelevant(lastMouseX, lastMouseY, wrapWorld)) {
-                Particle particle = (Particle) point;
+            for (int index : updater.getRelevant(lastMouseX, lastMouseY, particleDragSelectionRadius, settings.isWrap())) {
 
-                float dx = particle.x - lastMouseX;
-                float dy = particle.y - lastMouseY;
+                int positionIndex = index * 2;
+
+                float x = positions[positionIndex];
+                float y = positions[positionIndex + 1];
+
+                if (settings.isWrap()) {
+
+                    if (x > lastMouseX) {
+                        float wrappedX2 = x - settings.getRangeX();
+                        if (lastMouseX - wrappedX2 < x - lastMouseX) {
+                            x = wrappedX2;
+                        }
+                    } else {
+                        float wrappedX2 = x + settings.getRangeX();
+                        if (wrappedX2 - lastMouseX < lastMouseX - x) {
+                            x = wrappedX2;
+                        }
+                    }
+                    if (y > lastMouseY) {
+                        float wrappedY2 = y - settings.getRangeY();
+                        if (lastMouseY - wrappedY2 < y - lastMouseY) {
+                            y = wrappedY2;
+                        }
+                    } else {
+                        float wrappedY2 = y + settings.getRangeY();
+                        if (wrappedY2 - lastMouseY < lastMouseY - y) {
+                            y = wrappedY2;
+                        }
+                    }
+                }
+
+                float dx = x - lastMouseX;
+                float dy = y - lastMouseY;
 
                 if (dx * dx + dy * dy < particleDragSelectionRadius * particleDragSelectionRadius) {
 
-                    particle.vx = 0;
-                    particle.vy = 0;
+                    velocities[positionIndex] = 0;
+                    velocities[positionIndex + 1] = 0;
 
-                    particle.x += dragX;
-                    particle.y += dragY;
-                }
-            }
-        }
+                    x += dragX;
+                    y += dragY;
 
-
-        all = pm.getAll();
-        while (all.hasNext()) {
-            Particle particle = (Particle) all.next();
-
-            particle.x += particle.vx * dt;
-            particle.y += particle.vy * dt;
-
-            if (wrapWorld) {
-
-                particle.x = Helper.modulo(particle.x, boxWidth);
-                particle.y = Helper.modulo(particle.y, boxHeight);
-
-            } else {
-
-                // stop particles at the boundaries
-
-                if (particle.x < boxMargin) {
-                    particle.x = boxMargin;
-                    particle.vx = -particle.vx;
-                } else if (particle.x > boxWidth - boxMargin) {
-                    particle.x = boxWidth - boxMargin;
-                    particle.vx = -particle.vx;
-                }
-                if (particle.y < boxMargin) {
-                    particle.y = boxMargin;
-                    particle.vy = -particle.vy;
-                } else if (particle.y > boxHeight - boxMargin) {
-                    particle.y = boxHeight - boxMargin;
-                    particle.vy = -particle.vy;
+                    positions[positionIndex] = x;
+                    positions[positionIndex + 1] = y;
                 }
             }
         }
@@ -569,15 +592,15 @@ public class World {
     }
 
     public void draw(PGraphics context) {
+
+        context.pushStyle();
+        context.pushMatrix();
+
+        camera.apply(context);
+
         context.ellipseMode(context.RADIUS);
 
         drawParticles(context);
-
-        if (drawParticleManager) {
-            context.pushStyle();
-            pm.draw(context);
-            context.popStyle();
-        }
 
         if (!camera.isFollowing() && Math.abs(camera.getScale() - 1) < 0.1f) {
             context.pushStyle();
@@ -591,10 +614,11 @@ public class World {
             context.popStyle();
         }
 
+        context.popMatrix();
+        context.popStyle();
+
         if (drawForceDiagram) {
-            context.pushStyle();
-            drawForces(context);
-            context.popStyle();
+            drawForces(context, settings.getMatrix());
         }
 
         if (drawRenderingStats) {
@@ -607,14 +631,30 @@ public class World {
     }
 
     public void drawParticles(PGraphics context) {
+
         context.pushStyle();
+
         context.noStroke();
-        PointManager.AllIterator all = pm.getAll();
-        while (all.hasNext()) {
-            Particle particle = (Particle) all.next();
-            context.fill(getColor(particle.type));
-            context.rect(particle.x, particle.y, particleSize, particleSize);
+
+        int[] types = updater.getTypes();
+        float[] positions = updater.getPositions();
+
+        int typeIndex = 0;
+        int positionIndex = 0;
+
+        while (positionIndex < positions.length) {
+
+            int type = types[typeIndex];
+            float x = positions[positionIndex];
+            float y = positions[positionIndex + 1];
+
+            context.fill(getColor(type));
+            context.rect(x, y, particleSize, particleSize);
+
+            typeIndex += 1;
+            positionIndex += 2;
         }
+
         context.popStyle();
     }
 
@@ -622,16 +662,17 @@ public class World {
         return typeColorMap.get(type);
     }
 
-    private void drawForces(PGraphics context) {
+    private void drawForces(PGraphics context, logic.Matrix matrix) {
+        context.pushStyle();
         context.pushMatrix();
 
         float size = 20;
 
-        context.translate(context.width - size * (matrix.n + 1), 0);
+        context.translate(context.width - size * (matrix.size() + 1), 0);
 
         context.translate(size/2, size/2);
 
-        for (int type = 0; type < matrix.n; type++) {
+        for (int type = 0; type < matrix.size(); type++) {
             context.fill(typeColorMap.get(type));
             context.ellipse(size + type * size, 0, size / 2, size / 2);
             context.ellipse(0, size + type * size, size / 2, size / 2);
@@ -639,8 +680,8 @@ public class World {
 
         context.translate(size / 2, size / 2);
         context.textAlign(context.CENTER, context.CENTER);
-        for (int i = 0; i < matrix.n; i++) {
-            for (int j = 0; j < matrix.n; j++) {
+        for (int i = 0; i < matrix.size(); i++) {
+            for (int j = 0; j < matrix.size(); j++) {
 
                 float attraction = matrix.get(i, j);
 
@@ -664,9 +705,10 @@ public class World {
         context.text(String.format("%s [%d]",
                 matrixInitializerNames.get(currentMatrixInitializerIndex),
                 currentMatrixInitializerIndex
-        ), size * matrix.n, size * matrix.n + size);
+        ), size * matrix.size(), size * matrix.size() + size);
 
         context.popMatrix();
+        context.popStyle();
     }
 
     public boolean shouldDrawRenderingStats() {
