@@ -14,8 +14,8 @@ This version is (compared to similar projects):
 
 ## Repository Structure
 
-There are two projects: A Java program, and a Flutter project which includes an Android app and a web version.
-Their source code is in the respective folders `java/` and `flutter/`.
+There are two projects: A Java application, and a Flutter project which includes an Android app and a web version.
+Their source code is in the respective folders `java-application/` and `flutter/`.
 
 ## Ready to use
 
