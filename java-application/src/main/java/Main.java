@@ -1,5 +1,6 @@
 import frontend.ColorMaker;
 import frontend.Helper;
+import frontend.InfoDisplay;
 import frontend.Renderer;
 import processing.core.PApplet;
 import processing.core.PFont;
@@ -19,6 +20,8 @@ public class Main extends PApplet {
     private int lastUpdateTimeIndex = 0;
     private float[] lastDrawTimes = new float[50];
     private int lastDrawTimeIndex = 0;
+
+    private InfoDisplay infoDisplay = new InfoDisplay();
 
     private Renderer renderer;
 
@@ -188,9 +191,14 @@ public class Main extends PApplet {
             }
             drawTimeAvg /= lastDrawTimes.length;
 
-            text(String.format("    fps: %3.0f", frameRate), 20, 20);
-            text(String.format(" update: %4.1f ms", updateTimeAvg), 20, 40);
-            text(String.format("   draw: %4.1f ms", drawTimeAvg), 20, 60);
+            this.infoDisplay.begin();
+            this.infoDisplay.text("n", renderer.getParticleCount(), 5, 0);
+            this.infoDisplay.text("fps", frameRate, 3, 0);
+            this.infoDisplay.set(4, 1, "ms");
+            this.infoDisplay.text("update", updateTimeAvg);
+            this.infoDisplay.text("draw", drawTimeAvg);
+            this.infoDisplay.text("total", updateTimeAvg + drawTimeAvg);
+            this.infoDisplay.end(getGraphics(), 0, 0);
         }
     }
 

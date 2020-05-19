@@ -715,6 +715,10 @@ public class Renderer {
         return drawRenderingStats;
     }
 
+    public int getParticleCount() {
+        return nParticles;
+    }
+
     private void requestScreenshot() {
         screenshotRequested = true;
     }
