@@ -114,7 +114,7 @@ class MultithreadedUpdater implements Updater {
 
         int centerContainerIndex = getContainerIndex(containerX, containerY);
 
-        ArrayList<Container> relevantContainers = new ArrayList<>(8);
+        ArrayList<Container> relevantContainers = new ArrayList<>(includeCenter ? 9 : 8);
 
         int minContainerX = containerX - radiusX;
         int minContainerY = containerY - radiusY;
