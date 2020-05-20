@@ -167,7 +167,7 @@ class MultithreadedUpdater implements Updater {
     }
 
     @Override
-    public void updateVelocities(Settings settings) {
+    public void updateVelocities(Settings settings, UpdaterLogic updaterLogic) {
 
         final Settings s = settings.clone();  // UI thread could change settings
 
@@ -230,7 +230,7 @@ class MultithreadedUpdater implements Updater {
                 for (int index : container.indices) {
                     int index2 = index * 2;
 
-                    float[] velocity = UpdaterLogic.updateVelocity(
+                    float[] velocity = updaterLogic.updateVelocity(
                             s, relevantPositions, relevantTypes,
                             relevantIndex, velocities[index2], velocities[index2 + 1]
                     );
@@ -266,7 +266,7 @@ class MultithreadedUpdater implements Updater {
     }
 
     @Override
-    public void updatePositions(Settings settings) {
+    public void updatePositions(Settings settings, UpdaterLogic updaterLogic) {
 
         final Settings s = settings.clone();  // UI thread could change settings
 
@@ -279,7 +279,7 @@ class MultithreadedUpdater implements Updater {
 
         while (positionIndex < positions.length) {
 
-            float[] position = UpdaterLogic.updatePosition(
+            float[] position = updaterLogic.updatePosition(
                     s,
                     positions[positionIndex], positions[positionIndex + 1],
                     velocities[positionIndex], velocities[positionIndex + 1]

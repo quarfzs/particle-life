@@ -161,7 +161,7 @@ class RMaxUpdater implements Updater {
     }
 
     @Override
-    public void updateVelocities(Settings s) {
+    public void updateVelocities(Settings s, UpdaterLogic updaterLogic) {
 
         // create containers if necessary
         nx = (int) Math.floor(s.getRangeX() / s.getRMax());
@@ -212,7 +212,7 @@ class RMaxUpdater implements Updater {
             for (int index : container.indices) {
                 int index2 = index * 2;
 
-                float[] velocity = UpdaterLogic.updateVelocity(
+                float[] velocity = updaterLogic.updateVelocity(
                         s, relevantPositions, relevantTypes,
                         relevantIndex, velocities[index2], velocities[index2 + 1]
                 );
@@ -238,7 +238,7 @@ class RMaxUpdater implements Updater {
     }
 
     @Override
-    public void updatePositions(Settings s) {
+    public void updatePositions(Settings s, UpdaterLogic updaterLogic) {
 
         // create buffer if necessary
         if (positionsBuffer == null || positionsBuffer.length != positions.length) {
@@ -249,7 +249,7 @@ class RMaxUpdater implements Updater {
 
         while (positionIndex < positions.length) {
 
-            float[] position = UpdaterLogic.updatePosition(
+            float[] position = updaterLogic.updatePosition(
                     s,
                     positions[positionIndex], positions[positionIndex + 1],
                     velocities[positionIndex], velocities[positionIndex + 1]

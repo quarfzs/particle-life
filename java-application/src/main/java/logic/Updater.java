@@ -18,6 +18,6 @@ public interface Updater {
      */
     int[] getRelevant(float x, float y, float radius, boolean wrap);
 
-    void updateVelocities(Settings s);
-    void updatePositions(Settings s);
+    void updateVelocities(Settings s, UpdaterLogic updaterLogic);
+    void updatePositions(Settings s, UpdaterLogic updaterLogic);
 }

@@ -1,7 +1,9 @@
 package frontend;
 
+import logic.DefaultUpdaterLogic;
 import logic.Settings;
 import logic.Updater;
+import logic.UpdaterLogic;
 import processing.core.PGraphics;
 
 import javax.swing.*;
@@ -56,6 +58,7 @@ public class Renderer {
     private boolean screenshotRequested = false;
 
     private Updater updater;
+    private UpdaterLogic updaterLogic;
 
     private float windowWidth;
     private float windowHeight;
@@ -75,6 +78,7 @@ public class Renderer {
         calcColors();
 
         this.updater = new MultithreadedUpdater();
+        this.updaterLogic = new DefaultUpdaterLogic();
         settings.setRange(width, height);
         settings.setMatrix(matrix);
         resetUpdaterSettings();
@@ -517,13 +521,13 @@ public class Renderer {
             } else {
                 settings.setDt(dt);
             }
-            updater.updateVelocities(settings);
+            updater.updateVelocities(settings, this.updaterLogic);
         }
 
         applyDrag();
 
         if (!paused) {
-            updater.updatePositions(settings);
+            updater.updatePositions(settings, this.updaterLogic);
         }
     }
 

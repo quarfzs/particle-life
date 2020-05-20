@@ -46,7 +46,7 @@ class SimpleUpdater implements Updater {
     private float[] velocitiesBuffer;
 
     @Override
-    public void updateVelocities(Settings s) {
+    public void updateVelocities(Settings s, UpdaterLogic updaterLogic) {
 
         // create buffer if necessary
         if (velocitiesBuffer == null || velocitiesBuffer.length != velocities.length) {
@@ -58,7 +58,7 @@ class SimpleUpdater implements Updater {
 
         while (positionIndex < positions.length) {
 
-            float[] velocity = UpdaterLogic.updateVelocity(
+            float[] velocity = updaterLogic.updateVelocity(
                     s, positions, types, typeIndex, velocities[positionIndex], velocities[positionIndex + 1]
             );
 
@@ -76,7 +76,7 @@ class SimpleUpdater implements Updater {
     }
 
     @Override
-    public void updatePositions(Settings s) {
+    public void updatePositions(Settings s, UpdaterLogic updaterLogic) {
 
         // create buffer if necessary
         if (positionsBuffer == null || positionsBuffer.length != positions.length) {
@@ -87,7 +87,7 @@ class SimpleUpdater implements Updater {
 
         while (positionIndex < positions.length) {
 
-            float[] position = UpdaterLogic.updatePosition(
+            float[] position = updaterLogic.updatePosition(
                     s,
                     positions[positionIndex], positions[positionIndex + 1],
                     velocities[positionIndex], velocities[positionIndex + 1]
