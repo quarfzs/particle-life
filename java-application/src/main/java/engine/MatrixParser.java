@@ -1,4 +1,4 @@
-package frontend;
+package engine;
 
 import java.util.ArrayList;
 import java.util.Locale;
@@ -34,15 +34,15 @@ public final class MatrixParser {
         return null;
     }
 
-    public static String matrixToString(Matrix matrix) {
+    public static String matrixToString(logic.Matrix matrix) {
         return matrixToString(matrix, floatEncoderDefault);
     }
 
-    public static String matrixToStringRoundAndFormat(Matrix matrix) {
+    public static String matrixToStringRoundAndFormat(logic.Matrix matrix) {
         return matrixToString(matrix, floatEncoderRoundAndFormat);
     }
 
-    private static String matrixToString(Matrix matrix, FloatEncoder floatEncoder) {
+    private static String matrixToString(logic.Matrix matrix, FloatEncoder floatEncoder) {
         StringBuilder sb = new StringBuilder();
         for (int i = 0; i < matrix.size(); i++) {
             for (int j = 0; j < matrix.size() - 1; j++) {

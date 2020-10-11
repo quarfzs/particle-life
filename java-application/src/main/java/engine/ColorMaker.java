@@ -1,4 +1,4 @@
-package frontend;
+package engine;
 
 public interface ColorMaker {
     int rgb(float r, float g, float b);

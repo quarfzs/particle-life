@@ -1,4 +1,4 @@
-package frontend;
+package engine;
 
 import logic.Updater;
 import processing.core.PGraphics;

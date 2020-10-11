@@ -1,4 +1,4 @@
-package frontend;
+package engine;
 
 import logic.Settings;
 import logic.Updater;

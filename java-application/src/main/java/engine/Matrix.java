@@ -1,4 +1,4 @@
-package frontend;
+package engine;
 
 public class Matrix implements logic.Matrix {
     private final int n;

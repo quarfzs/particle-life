@@ -1,12 +1,18 @@
-package frontend;
+package engine;
 
 import logic.Settings;
 import logic.Updater;
 import logic.UpdaterLogic;
 
 import java.util.ArrayList;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadPoolExecutor;
 
-class RMaxUpdater implements Updater {
+class MultithreadedUpdater implements Updater {
+
+    private ExecutorService executor = (ThreadPoolExecutor) Executors.newFixedThreadPool(10);
 
     private int[] types;
     private float[] positions;
@@ -60,7 +66,7 @@ class RMaxUpdater implements Updater {
         }
     }
 
-    private void createContainers(Settings s) {
+    private void createContainers() {
 
         containers = new Container[nx * ny];
         int initialCapacity = 2 * types.length / containers.length;
@@ -161,7 +167,9 @@ class RMaxUpdater implements Updater {
     }
 
     @Override
-    public void updateVelocities(Settings s, UpdaterLogic updaterLogic) {
+    public void updateVelocities(Settings settings, UpdaterLogic updaterLogic) {
+
+        final Settings s = settings.clone();  // UI thread could change settings
 
         // create containers if necessary
         nx = (int) Math.floor(s.getRangeX() / s.getRMax());
@@ -169,7 +177,7 @@ class RMaxUpdater implements Updater {
         containerSizeX = s.getRangeX() / nx;
         containerSizeY = s.getRangeY() / ny;
         if (containers == null || nx * ny != containers.length) {
-            createContainers(s);
+            createContainers();
         } else {
             clearContainers();
         }
@@ -181,47 +189,61 @@ class RMaxUpdater implements Updater {
             velocitiesBuffer = new float[velocities.length];
         }
 
+
+        CountDownLatch countDownLatch = new CountDownLatch(containers.length);
+
         int containerX = 0;
         int containerY = 0;
         for (Container container : containers) {
-            ArrayList<Container> relevantContainers = getNeighborContainers(
-                    containerX, containerY, 1, 1,
-                    false, s.isWrap()
-            );
-            ArrayList<Integer> relevantIndices = new ArrayList<>(container.indices);  // regarded particles come first
-            relevantContainers.forEach(c -> relevantIndices.addAll(c.indices));
 
-            int[] relevantTypes = new int[relevantIndices.size()];
-            float[] relevantPositions = new float[relevantIndices.size() * 2];
+            final int finalContainerX = containerX;
+            final int finalContainerY = containerY;
 
-            int typeIndex = 0;
-            int positionIndex = 0;
-            for (int index : relevantIndices) {
-                int index2 = 2 * index;
+            executor.submit(() -> {
 
-                relevantTypes[typeIndex] = types[index];
-
-                relevantPositions[positionIndex] = positions[index2];
-                relevantPositions[positionIndex + 1] = positions[index2 + 1];
-
-                typeIndex += 1;
-                positionIndex += 2;
-            }
-
-            int relevantIndex = 0;
-            for (int index : container.indices) {
-                int index2 = index * 2;
-
-                float[] velocity = updaterLogic.updateVelocity(
-                        s, relevantPositions, relevantTypes,
-                        relevantIndex, velocities[index2], velocities[index2 + 1]
+                ArrayList<Container> relevantContainers = getNeighborContainers(
+                        finalContainerX, finalContainerY, 1, 1,
+                        false, s.isWrap()
                 );
+                ArrayList<Integer> relevantIndices = new ArrayList<>(container.indices);  // regarded particles come first
+                relevantContainers.forEach(c -> relevantIndices.addAll(c.indices));
 
-                velocitiesBuffer[index2] = velocity[0];
-                velocitiesBuffer[index2 + 1] = velocity[1];
+                int[] relevantTypes = new int[relevantIndices.size()];
+                float[] relevantPositions = new float[relevantIndices.size() * 2];
 
-                relevantIndex++;
-            }
+                int typeIndex = 0;
+                int positionIndex = 0;
+                for (int index : relevantIndices) {
+                    int index2 = 2 * index;
+
+                    relevantTypes[typeIndex] = types[index];
+
+                    relevantPositions[positionIndex] = positions[index2];
+                    relevantPositions[positionIndex + 1] = positions[index2 + 1];
+
+                    typeIndex += 1;
+                    positionIndex += 2;
+                }
+
+
+                int relevantIndex = 0;
+                for (int index : container.indices) {
+                    int index2 = index * 2;
+
+                    float[] velocity = updaterLogic.updateVelocity(
+                            s, relevantPositions, relevantTypes,
+                            relevantIndex, velocities[index2], velocities[index2 + 1]
+                    );
+
+                    velocitiesBuffer[index2] = velocity[0];
+                    velocitiesBuffer[index2 + 1] = velocity[1];
+
+                    relevantIndex++;
+                }
+
+                countDownLatch.countDown();
+            });
+
 
             // step to next container
             containerX++;
@@ -231,14 +253,22 @@ class RMaxUpdater implements Updater {
             }
         }
 
-        // swap buffer
-        float[] h = velocities;
-        velocities = velocitiesBuffer;
-        velocitiesBuffer = h;
+        try {
+            countDownLatch.await();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        } finally {
+            // swap buffer
+            float[] h = velocities;
+            velocities = velocitiesBuffer;
+            velocitiesBuffer = h;
+        }
     }
 
     @Override
-    public void updatePositions(Settings s, UpdaterLogic updaterLogic) {
+    public void updatePositions(Settings settings, UpdaterLogic updaterLogic) {
+
+        final Settings s = settings.clone();  // UI thread could change settings
 
         // create buffer if necessary
         if (positionsBuffer == null || positionsBuffer.length != positions.length) {

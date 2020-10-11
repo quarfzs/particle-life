@@ -1,7 +1,6 @@
-import frontend.ColorMaker;
-import frontend.Helper;
-import frontend.InfoDisplay;
-import frontend.Renderer;
+import engine.InfoDisplay;
+import engine.Renderer;
+import gui.colormaker.RainbowColorMaker;
 import processing.core.PApplet;
 import processing.core.PFont;
 import processing.core.PImage;
@@ -47,57 +46,7 @@ public class Main extends PApplet {
         PFont mono = createFont("Consolas", 18, false);
         textFont(mono);
 
-        ColorMaker subtractiveColorMaker = new ColorMaker() {
-
-            private float[][] rainbow = new float[][]{
-                    new float[]{255, 0, 0},//red
-                    new float[]{255, 127, 0},//orange
-                    new float[]{255, 255, 0},//yellow
-                    new float[]{0, 255, 0},//green
-                    new float[]{0, 0, 255},//blue
-                    new float[]{75, 0, 130},//indigo
-                    new float[]{148, 0, 211},//violet
-            };
-
-            @Override
-            public int rgb(float r, float g, float b) {
-                pushStyle();
-                colorMode(RGB, 255, 255, 255);
-                int c = color(r, g, b);
-                popStyle();
-                return c;
-            }
-
-            @Override
-            public int hsb(float h, float s, float b) {
-                h *= rainbow.length;
-                int j1 = floor(h);
-                int j2 = ceil(h);
-
-                int i1 = Helper.modulo(j1, rainbow.length);
-                int i2 = Helper.modulo(j2, rainbow.length);
-
-                pushStyle();
-                colorMode(RGB, 255);
-
-                int c;
-                if (i1 == i2) {
-                    c = color(rainbow[i1][0], rainbow[i1][1], rainbow[i1][2]);
-
-                } else {
-
-                    c = lerpColor(
-                            color(rainbow[i1][0], rainbow[i1][1], rainbow[i1][2]),
-                            color(rainbow[i2][0], rainbow[i2][1], rainbow[i2][2]),
-                            (h - j1) / (j2 - j1));
-                }
-
-                popStyle();
-                return c;
-            }
-        };
-
-        renderer = new Renderer(width, height, subtractiveColorMaker);
+        renderer = new Renderer(width, height, new RainbowColorMaker(g));
     }
 
     @Override

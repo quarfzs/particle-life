@@ -1,23 +1,26 @@
-package frontend;
+package engine;
 
 import logic.DefaultUpdaterLogic;
 import logic.Settings;
 import logic.Updater;
 import logic.UpdaterLogic;
+import gui.colormaker.ColorMaker;
 import processing.core.PGraphics;
+import requests.*;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import java.awt.*;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.Random;
 
 public class Renderer {
 
     private boolean paused = false;
     private boolean useFixedTimeStep = false;
-    private int fixedTimeStepValueMillis = 16;
+    private float fixedTimeStepValueMillis = 16;
 
     private float particleDensity = 0.002f;
     private int nParticles;
@@ -26,21 +29,13 @@ public class Renderer {
     
     private Settings settings = new Settings();
 
-    private Matrix matrix;
-    private Matrix requestedMatrix = null;
-    private int nextMatrixSize = 6;
     private ArrayList<Matrix.Initializer> matrixInitializers = new ArrayList<>();
     private ArrayList<String> matrixInitializerNames = new ArrayList<>();
     private int currentMatrixInitializerIndex = 0;
-    private int requestedMatrixInitializerIndex = currentMatrixInitializerIndex;
 
     private Random random = new Random();
     private ColorMaker colorMaker;
     private HashMap<Integer, Integer> typeColorMap;
-
-    private boolean resetRequested = false;
-    private boolean respawnRequested = false;
-    private float requestedParticleDensity = particleDensity;
 
     private boolean drawForceDiagram = false;
     private boolean drawRenderingStats = false;
@@ -51,7 +46,6 @@ public class Renderer {
     private float lastMouseY = 0;
     private boolean mousePressed = false;
     private Camera camera;
-    private float cameraFocusSelectionRadius = 25;
 
     private float particleDragSelectionRadius = 25;
 
@@ -65,6 +59,35 @@ public class Renderer {
 
     private JFrame settingsJFrame = null;
 
+    private final LinkedList<Request> requests = new LinkedList<>();
+
+    public interface MatrixChangeListener {
+        void matrixChanged(logic.Matrix matrix);
+    }
+
+    public interface ParticleDensityListener {
+        void onChange(int n, float density);
+    }
+
+    public ArrayList<MatrixChangeListener> matrixChangeListeners = new ArrayList<>();
+    public ArrayList<ParticleDensityListener> particleDensityListeners = new ArrayList<>();
+
+    public void addMatrixChangeListener(MatrixChangeListener listener) {
+        matrixChangeListeners.add(listener);
+    }
+
+    private void notifyMatrixChangeListeners() {
+        matrixChangeListeners.forEach(listener -> listener.matrixChanged(settings.getMatrix()));
+    }
+
+    public void addParticleDensityListener(ParticleDensityListener listener) {
+        particleDensityListeners.add(listener);
+    }
+
+    private void notifyParticleDensityChangeListeners() {
+        particleDensityListeners.forEach(listener -> listener.onChange(nParticles, particleDensity));
+    }
+
     public Renderer(float width, float height, ColorMaker colorMaker) {
 
         this.windowWidth = width;
@@ -74,22 +97,33 @@ public class Renderer {
         this.camera = new Camera(width / 2f, height / 2f);
 
         initAttractionSetters();
+        settings.setMatrix(new Matrix(6, (i, j) -> 0));
         makeMatrix();
         calcColors();
 
         this.updater = new MultithreadedUpdater();
         this.updaterLogic = new DefaultUpdaterLogic();
         settings.setRange(width, height);
-        settings.setMatrix(matrix);
+        makeMatrix();
         resetUpdaterSettings();
 
         nParticles = calcParticleCount();
 
         spawnParticles();
+
+        notifyMatrixChangeListeners();
+    }
+
+    public Settings getSettings() {
+        return settings;
     }
 
     private int calcParticleCount() {
         return (int) (particleDensity * settings.getRangeX() * settings.getRangeY());
+    }
+
+    private float calcParticleDensity() {
+        return nParticles / (settings.getRangeX() * settings.getRangeY());
     }
 
     private void resetUpdaterSettings() {
@@ -167,8 +201,8 @@ public class Renderer {
 
         GUIBuilder c = new GUIBuilder();
 
-        c.addSlider("Number of Types (Colors)", nextMatrixSize, this::requestMatrixSize, 1, 17, 0, 1);
-        c.addSlider("Particle Density (in 1/1000s per pixel)", (int) (particleDensity * 4000), value -> requestedParticleDensity = value / 4000f, 0, 50, 1, 5);
+        c.addSlider("Number of Types (Colors)", settings.getMatrix().size(), this::requestMatrixSize, 1, 17, 0, 1);
+        c.addSlider("Particle Density (in 1/1000s per pixel)", (int) (particleDensity * 4000), value -> request(new RequestParticleDensity(value / 4000f)), 0, 50, 1, 5);
         c.addSlider("Matrix Initializer (enable diagram for better understanding)", currentMatrixInitializerIndex, this::requestMatrixInitializerIndex, 0, matrixInitializers.size() - 1, 0, 1);
         c.addSlider("Spawn Mode", spawnMode, value -> spawnMode = value, 0, 4, 1, 1);
         c.addButton("New World", this::requestReset);
@@ -184,7 +218,7 @@ public class Renderer {
                     requestMatrix(m);
                 }
             });
-            c.addButton("Get Matrix", () -> matrixTextArea.setText(MatrixParser.matrixToString(matrix)));
+            c.addButton("Get Matrix", () -> matrixTextArea.setText(MatrixParser.matrixToString(settings.getMatrix())));
             c.addButton("Round & Format", () -> {
                 Matrix m = MatrixParser.parseMatrix(matrixTextArea.getText());
                 if (m != null) {
@@ -203,7 +237,7 @@ public class Renderer {
         c.addCheckBox("Draw Rendering Stats", drawRenderingStats, state -> drawRenderingStats = state);
         c.addButton("Save Screenshot", this::requestScreenshot);
         c.addCheckBox("Use Fixed Timestep", useFixedTimeStep, state -> useFixedTimeStep = state);
-        c.addSlider("Fixed TimeStep (ms)", fixedTimeStepValueMillis, value -> fixedTimeStepValueMillis = value,
+        c.addSlider("Fixed TimeStep (ms)", (int) fixedTimeStepValueMillis, value -> fixedTimeStepValueMillis = value,
                 1, 100, 1, 10);
 
         frame.setVisible(true);
@@ -221,34 +255,13 @@ public class Renderer {
         }
     }
 
-    private void requestMatrixSize(int matrixSize) {
-        nextMatrixSize = matrixSize;
-    }
-
-    private void requestMatrix(Matrix matrix) {
-        requestedMatrix = matrix;
-    }
-
-    /**
-     * use this if you want to call {@link #reset()} from another Thread
-     */
-    private void requestReset() {
-        resetRequested = true;
-    }
-
-    /**
-     * use this if you want to call <code>respawn()</code> from another Thread
-     */
-    private void requestRespawn() {
-        respawnRequested = true;
-    }
-
     private void reset() {
         makeMatrix();
-        settings.setMatrix(matrix);
         calcColors();
         spawnParticles();
         camera.stopFollow();
+
+        notifyMatrixChangeListeners();
     }
 
     private void respawn() {
@@ -328,17 +341,17 @@ public class Renderer {
      * Also correctly sets the colors.
      */
     private void makeMatrix() {
-        matrix = new Matrix(nextMatrixSize, matrixInitializers.get(currentMatrixInitializerIndex));
+        settings.setMatrix(
+                new Matrix(settings.getMatrix().size(),
+                matrixInitializers.get(currentMatrixInitializerIndex))
+        );
     }
 
     private void calcColors() {
-        typeColorMap = new HashMap<>(matrix.size());
-        for (int type = 0; type < matrix.size(); type++) {
-            typeColorMap.put(type, colorMaker.hsb(
-                    type / (float) matrix.size(),
-                    1,
-                    1
-            ));
+        final int matrixSize = settings.getMatrix().size();
+        typeColorMap = new HashMap<>(matrixSize);
+        for (int type = 0; type < matrixSize; type++) {
+            typeColorMap.put(type, colorMaker.getColor(type / (float) matrixSize));
         }
     }
 
@@ -352,6 +365,8 @@ public class Renderer {
         float rangeX = settings.getRangeX();
         float rangeY = settings.getRangeY();
 
+        int nTypes = settings.getMatrix().size();
+
         int typeIndex = 0;
         int positionIndex = 0;
 
@@ -362,39 +377,39 @@ public class Renderer {
 
             float radius = Math.min(rangeX, rangeY) / 3;
             switch (spawnMode) {
-                case 1: {
+                case 1: {  // sphere
                     double angle = 2 * Math.PI * Math.random();
                     float r = radius * (float) random.nextGaussian();
                     randomX = rangeX / 2 + r * (float) Math.cos(angle);
                     randomY = rangeY / 2 + r * (float) Math.sin(angle);
                     break;
-                } case 2: {
+                } case 2: {  // centered
                     double angle = 2 * Math.PI * Math.random();
                     float r = radius * (float) Math.sqrt(Math.random());
                     randomX = rangeX / 2 + r * (float) Math.cos(angle);
                     randomY = rangeY / 2 + r * (float) Math.sin(angle);
                     break;
-                } case 3: {
+                } case 3: {  // centered sphere
                     double angle = 2 * Math.PI * Math.random();
                     float r = radius * (float) Math.random();
                     randomX = rangeX / 2 + r * (float) Math.cos(angle);
                     randomY = rangeY / 2 + r * (float) Math.sin(angle);
                     break;
-                } case 4: {
+                } case 4: {  // spiral
                     double f = Math.random();
                     double angle = 2 * Math.PI * f;
                     float r = radius * (float) Math.sqrt(f) + radius * 0.1f * (float) Math.random();
                     randomX = rangeX / 2 + r * (float) Math.cos(angle);
                     randomY = rangeY / 2 + r * (float) Math.sin(angle);
                     break;
-                } default: {
+                } default: {  // uniform
                     randomX = rangeX * (float) Math.random();
                     randomY = rangeY * (float) Math.random();
                     break;
                 }
             }
 
-            types[typeIndex] = random.nextInt(matrix.size());
+            types[typeIndex] = random.nextInt(nTypes);
             positions[positionIndex] = randomX;
             positions[positionIndex + 1] = randomY;
             velocities[positionIndex] = 0;
@@ -409,26 +424,13 @@ public class Renderer {
         updater.setVelocities(velocities);
     }
 
-    private void requestMatrixInitializerIndex(int index) {
-        requestedMatrixInitializerIndex = index;
-    }
-
     public void keyReleased(char key) {
         switch (key) {
-            case 'r':
-                reset();
-                break;
-            case 's':
-                respawn();
-                break;
-            case 'o':
-                openSettingsGUI();
-                break;
-            case 'f':
-                toggleCameraFollow();
-                break;
-            case ' ':
-                paused ^= true;
+            case 'r' -> reset();
+            case 's' -> respawn();
+            case 'o' -> openSettingsGUI();
+            case 'f' -> toggleCameraFollow();
+            case ' ' -> paused ^= true;
         }
     }
 
@@ -467,11 +469,19 @@ public class Renderer {
         if (camera.isFollowing()) {
             camera.stopFollow();
         } else {
-            camera.startFollow(updater, mouseX, mouseY, cameraFocusSelectionRadius, settings.isWrap());
+            camera.startFollow(updater, mouseX, mouseY, particleDragSelectionRadius, settings.isWrap());
         }
     }
 
     public void updateUI(float dt) {
+
+        // handle requests
+
+        while (!requests.isEmpty()) {
+            handleRequest(requests.remove());
+        }
+
+        /*
         if (screenshotRequested) {
             screenshotRequested = false;
         }
@@ -491,6 +501,8 @@ public class Renderer {
                 calcColors();
                 respawn();
             }
+
+            notifyMatrixChangeListeners();
         }
 
         if (nextMatrixSize != matrix.size()) {
@@ -498,7 +510,7 @@ public class Renderer {
         }
 
         if (requestedMatrixInitializerIndex != currentMatrixInitializerIndex) {
-            currentMatrixInitializerIndex= requestedMatrixInitializerIndex;
+            currentMatrixInitializerIndex = requestedMatrixInitializerIndex;
             requestReset();
         }
 
@@ -508,9 +520,262 @@ public class Renderer {
         } else if (respawnRequested) {
             respawnRequested = false;
             respawn();
-        }
+        }*/
 
         camera.update(updater, dt);
+    }
+
+    private void handleRequest(Request r) {
+
+        if (r instanceof RequestMatrixValue) {
+
+            RequestMatrixValue req = (RequestMatrixValue) r;
+            logic.Matrix oldMatrix = settings.getMatrix();
+            settings.setMatrix(new Matrix(
+                    oldMatrix.size(),
+                    (i, j) -> (i == req.i && j == req.j) ? req.value : oldMatrix.get(i, j)
+            ));
+
+            notifyMatrixChangeListeners();
+
+        } else if (r instanceof RequestMatrix) {
+
+            RequestMatrix req = (RequestMatrix) r;
+            boolean matrixSizeChanged = req.matrix.size() != settings.getMatrix().size();
+
+            settings.setMatrix(req.matrix);
+            if (matrixSizeChanged) {
+                calcColors();
+            }
+
+            notifyMatrixChangeListeners();
+
+        } else if (r instanceof RequestRandomMatrix) {
+
+            makeMatrix();
+            notifyMatrixChangeListeners();
+
+        } else if (r instanceof RequestRespawn) {
+
+            respawn();
+
+        } else if (r instanceof RequestRandomTypes) {
+
+            int[] types = updater.getTypes();
+
+            int nTypes = settings.getMatrix().size();
+            for (int i = 0; i < types.length; i++) {
+                types[i] = random.nextInt(nTypes);
+            }
+
+            updater.setTypes(types);
+
+        } else if (r instanceof RequestParticleDensity) {
+
+            float requestedParticleDensity = ((RequestParticleDensity) r).density;
+            if (requestedParticleDensity != particleDensity) {
+
+                int[] types = updater.getTypes();
+                float[] positions = updater.getPositions();
+                float[] velocities = updater.getVelocities();
+
+                particleDensity = requestedParticleDensity;
+                nParticles = calcParticleCount();
+
+                int[] newTypes = new int[nParticles];
+                float[] newPositions = new float[nParticles * 2];
+                float[] newVelocities = new float[nParticles * 2];
+
+                if (newTypes.length < types.length) {
+                    // kick some random points out
+
+                    int nKick = types.length - newTypes.length;
+                    double kickProb = nKick / (double) types.length;
+
+                    int i = 0;
+                    int newTypeIndex = 0;
+                    while (i < types.length && newTypeIndex < newTypes.length) {
+
+                        // only skip if there are more points left than needed
+
+                        if (nKick > 0 && random.nextDouble() < kickProb) {
+                            nKick--;
+                        } else {
+                            newTypes[newTypeIndex] = types[i];
+                            newPositions[newTypeIndex * 2] = positions[i * 2];
+                            newPositions[newTypeIndex * 2 + 1] = positions[i * 2 + 1];
+                            newVelocities[newTypeIndex * 2] = velocities[i * 2];
+                            newVelocities[newTypeIndex * 2 + 1] = velocities[i * 2 + 1];
+                            newTypeIndex++;
+                        }
+
+                        i++;
+                    }
+
+                } else {
+                    // add some random points
+
+                    // first, copy the whole array
+                    for (int i = 0; i < types.length; i++) {
+                        newTypes[i] = types[i];
+                        newPositions[i * 2] = positions[i * 2];
+                        newPositions[i * 2 + 1] = positions[i * 2 + 1];
+                        newVelocities[i * 2] = velocities[i * 2];
+                        newVelocities[i * 2 + 1] = velocities[i * 2 + 1];
+                    }
+
+                    // add new random points to the end of the array
+                    int nTypes = settings.getMatrix().size();
+                    for (int i = types.length; i < newTypes.length; i++) {
+                        newTypes[i] = random.nextInt(nTypes);
+                        newPositions[i * 2] = random.nextFloat() * settings.getRangeX();
+                        newPositions[i * 2 + 1] = random.nextFloat() * settings.getRangeY();
+                        newVelocities[i * 2] = 0;
+                        newVelocities[i * 2 + 1] = 0;
+                    }
+                }
+
+                updater.setTypes(newTypes);
+                updater.setPositions(newPositions);
+                updater.setVelocities(newVelocities);
+
+                notifyParticleDensityChangeListeners();
+            }
+
+        } else if (r instanceof RequestMatrixInitializerIndex) {
+
+            currentMatrixInitializerIndex = ((RequestMatrixInitializerIndex) r).index;
+
+        } else if (r instanceof RequestMatrixSize) {
+
+            int requestedMatrixSize = ((RequestMatrixSize) r).size;
+            int oldMatrixSize = settings.getMatrix().size();
+
+            if (requestedMatrixSize != oldMatrixSize) {
+
+                if (requestedMatrixSize < oldMatrixSize) {
+                    // remove points of types that now no longer exist
+                    for (int i = requestedMatrixSize; i < oldMatrixSize; i++) {
+                        request(new RequestRemoveType(i));
+                    }
+                } else {
+                    logic.Matrix oldMatrix = settings.getMatrix();
+                    settings.setMatrix(new Matrix(
+                            requestedMatrixSize,
+                            (i, j) -> (i < oldMatrixSize && j < oldMatrixSize) ? oldMatrix.get(i, j) : 0
+                    ));
+                    calcColors();
+                    notifyMatrixChangeListeners();
+                }
+            }
+
+        } else if (r instanceof RequestScreenshot) {
+
+            //todo
+
+        } else if (r instanceof RequestRemoveType) {
+
+            RequestRemoveType req = (RequestRemoveType) r;
+
+            if (req.index >= 0 && req.index < settings.getMatrix().size() && settings.getMatrix().size() >= 2) {
+
+                // make matrix without the given type
+
+                logic.Matrix oldMatrix = settings.getMatrix();
+
+                settings.setMatrix(new Matrix(
+                        oldMatrix.size() - 1,
+                        (i, j) -> oldMatrix.get(i < req.index ? i : i + 1, j < req.index ? j : j + 1)
+                ));
+
+                calcColors();
+
+                // remove all particles of the given type and decrease type of all larger types
+
+                int[] types = updater.getTypes();
+                float[] positions = updater.getPositions();
+                float[] velocities = updater.getVelocities();
+
+                if (req.replaceRemovedPoints) {
+
+                    int nTypes = settings.getMatrix().size();
+
+                    for (int i = 0; i < types.length; i++) {
+                        if (types[i] == req.index) {
+                            if (req.replaceRandom) {
+                                types[i] = random.nextInt(nTypes);
+                            } else {
+                                types[i] = req.newType;
+                            }
+                        } else if (types[i] > req.index) {
+                            types[i]--;
+                        }
+                    }
+
+                    updater.setTypes(types);
+                    updater.setPositions(positions);
+                    updater.setVelocities(velocities);
+
+                } else {
+
+                    for (int value : types) {
+                        if (value == req.index) {
+                            nParticles--;
+                        }
+                    }
+
+                    particleDensity = calcParticleDensity();
+
+                    int[] newTypes = new int[nParticles];
+                    float[] newPositions = new float[nParticles * 2];
+                    float[] newVelocities = new float[nParticles * 2];
+
+                    int newTypesIndex = 0;
+
+                    for (int i = 0; i < types.length; i++) {
+
+                        int type = types[i];
+                        if (type != req.index) {
+
+                            newTypes[newTypesIndex] = type < req.index ? type : type - 1;
+                            newPositions[newTypesIndex * 2] = positions[i * 2];
+                            newPositions[newTypesIndex * 2 + 1] = positions[i * 2 + 1];
+                            newVelocities[newTypesIndex * 2] = velocities[i * 2];
+                            newVelocities[newTypesIndex * 2 + 1] = velocities[i * 2 + 1];
+
+                            newTypesIndex++;
+                        }
+                    }
+
+                    updater.setTypes(newTypes);
+                    updater.setPositions(newPositions);
+                    updater.setVelocities(newVelocities);
+
+                    notifyParticleDensityChangeListeners();
+                }
+
+                calcColors();
+                notifyMatrixChangeListeners();
+            }
+
+        } else if (r instanceof RequestSpawnMode) {
+
+            spawnMode = ((RequestSpawnMode) r).spawnMode;
+        } else if (r instanceof RequestFriction) {
+            settings.setFriction(((RequestFriction) r).friction);
+        } else if (r instanceof RequestDtEnabled) {
+            useFixedTimeStep = ((RequestDtEnabled) r).dtEnabled;
+        } else if (r instanceof RequestDt) {
+            fixedTimeStepValueMillis = ((RequestDt) r).dt;
+        } else if (r instanceof RequestForce) {
+            settings.setForceFactor(((RequestForce) r).force);
+        } else if (r instanceof RequestRMin) {
+            settings.setRMin(((RequestRMin) r).rMin);
+        } else if (r instanceof RequestRMax) {
+            settings.setRMax(((RequestRMax) r).rMax);
+        } else if (r instanceof RequestPause) {
+            paused = ((RequestPause) r).pause;
+        }
     }
 
     public void update(float dt) {
@@ -611,10 +876,6 @@ public class Renderer {
             context.noFill();
             context.stroke(128);
             context.ellipse(mouseX, mouseY, particleDragSelectionRadius, particleDragSelectionRadius);
-            if (!mousePressed) {
-                context.stroke(64);
-                context.ellipse(mouseX, mouseY, cameraFocusSelectionRadius, cameraFocusSelectionRadius);
-            }
             context.popStyle();
         }
 
@@ -723,11 +984,77 @@ public class Renderer {
         return nParticles;
     }
 
-    private void requestScreenshot() {
-        screenshotRequested = true;
+    public float getParticleDensity() {
+        return particleDensity;
     }
 
     public boolean isScreenshotRequested() {
         return screenshotRequested;
+    }
+
+    public int getMatrixInitializerIndex() {
+        return currentMatrixInitializerIndex;
+    }
+
+    public int getSpawnMode() {
+        return spawnMode;
+    }
+
+    public boolean isFixedTimeStepEnabled() {
+        return useFixedTimeStep;
+    }
+
+    public float getFixedTimeStepValueMillis() {
+        return fixedTimeStepValueMillis;
+    }
+
+    public boolean isPaused() {
+        return paused;
+    }
+
+    public void request(Request r) {
+        requests.add(r);
+    }
+
+    // REQUESTS (OLD)
+
+    private void requestScreenshot() {
+        screenshotRequested = true;
+    }
+
+    public void requestMatrixSize(int matrixSize) {
+        //todo: remove
+        // nextMatrixSize = matrixSize;
+    }
+
+    private void requestMatrix(Matrix matrix) {
+        //todo: remove
+        //requestedMatrix = matrix;
+    }
+
+    public void requestParticleDensity(float density) {
+        //todo: remove
+        // requestedParticleDensity = density;
+    }
+
+    /**
+     * use this if you want to call {@link #reset()} from another Thread
+     */
+    public void requestReset() {
+        //todo: remove
+        // resetRequested = true;
+    }
+
+    /**
+     * use this if you want to call <code>respawn()</code> from another Thread
+     */
+    public void requestRespawn() {
+        //todo: remove
+        // respawnRequested = true;
+    }
+
+    private void requestMatrixInitializerIndex(int index) {
+        //todo: remove
+        //requestedMatrixInitializerIndex = index;
     }
 }
