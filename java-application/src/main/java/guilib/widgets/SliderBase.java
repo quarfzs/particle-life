@@ -15,9 +15,10 @@ abstract class SliderBase extends Widget {
     private boolean hoveringKnob = false;
     private Label label;
     private List<Widget> children;
+    private boolean labelTextSet = false;
 
     public SliderBase() {
-        label = new Label(getLabelText());
+        label = new Label("");
         children = List.of(label);
         setRatio(0);
     }
@@ -26,19 +27,9 @@ abstract class SliderBase extends Widget {
 
     @Override
     public void updateSize(int minWidth, int minHeight, int maxWidth, int maxHeight) {
-
-        label.updateSize(minWidth, minHeight, maxHeight, maxHeight);
+        label.updateSize(minWidth, minHeight, maxWidth, maxHeight);
         int prefHeight = label.getHeight() + 2 * getMargin();
         setSize(minWidth, Utility.constrainDimension(minHeight, prefHeight, maxHeight));
-
-        /*
-        int prefHeight = label.height + sliderBase.height;
-        setSize(minWidth, Utility.constrainDimension(minHeight, prefHeight, maxHeight));
-
-        label.updateSize(getWidth(), 0, getWidth(), -1);
-        sliderBase.updateSize(getWidth(), 0, getWidth(), -1);
-        sliderBase.dy = label.height;
-         */
     }
 
     @Override
@@ -87,6 +78,11 @@ abstract class SliderBase extends Widget {
 
     @Override
     protected final void render(PGraphics context) {
+
+        if (!labelTextSet) {
+            label.setText(getLabelText());
+            labelTextSet = true;
+        }
 
         // background
         clear(context);
@@ -156,9 +152,10 @@ abstract class SliderBase extends Widget {
      */
     protected final void setRatio(double ratio) {
         double newRatio = constrainRatio(ratio);
-        if (newRatio != this.ratio) {
+        if (newRatio != this.ratio || !labelTextSet) {
             this.ratio = newRatio;
             label.setText(getLabelText());
+            labelTextSet = true;
             requestRender();
         }
     }
