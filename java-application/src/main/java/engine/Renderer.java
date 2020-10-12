@@ -53,8 +53,6 @@ public class Renderer {
 
     private float particleDragSelectionRadius = 25;
 
-    private boolean screenshotRequested = false;
-
     private Updater updater;
     private UpdaterLogic updaterLogic;
 
@@ -234,12 +232,6 @@ public class Renderer {
 
         GUIBuilder c = new GUIBuilder();
 
-        c.addSlider("Number of Types (Colors)", settings.getMatrix().size(), this::requestMatrixSize, 1, 17, 0, 1);
-        c.addSlider("Particle Density (in 1/1000s per pixel)", (int) (particleDensity * 4000), value -> request(new RequestParticleDensity(value / 4000f)), 0, 50, 1, 5);
-        c.addSlider("Matrix Initializer (enable diagram for better understanding)", currentMatrixInitializerIndex, this::requestMatrixInitializerIndex, 0, matrixInitializers.size() - 1, 0, 1);
-        c.addSlider("Spawn Mode", spawnMode, value -> spawnMode = value, 0, 4, 1, 1);
-        c.addButton("New World", this::requestReset);
-        c.addButton("Stir Up", this::requestRespawn);
         {
             final JTextArea matrixTextArea = new JTextArea(6, 24);
             JScrollPane matrixScrollPane = new JScrollPane(matrixTextArea);
@@ -248,7 +240,7 @@ public class Renderer {
             c.addButton("Apply Matrix", () -> {
                 Matrix m = MatrixParser.parseMatrix(matrixTextArea.getText());
                 if (m != null) {
-                    requestMatrix(m);
+                    request(new RequestMatrix(m));
                 }
             });
             c.addButton("Get Matrix", () -> matrixTextArea.setText(MatrixParser.matrixToString(settings.getMatrix())));
@@ -259,18 +251,9 @@ public class Renderer {
                 }
             });
         }
-        c.addSlider("rKern", (int) settings.getRMin(), settings::setRMin, 0, 100, 10, 20);
-        c.addSlider("rMax ( > rKern!)", (int) settings.getRMax(), settings::setRMax, 10, 100, 10, 20);
-        c.addSlider("Heat", (int) settings.getHeat(), settings::setHeat, 0, 200, 10, 50);
-        c.addSlider("Friction", (int) settings.getFriction(), settings::setFriction, 0, 60, 5, 10);
-        c.addSlider("Force Factor", (int) settings.getForceFactor(), settings::setForceFactor, 0, 1500, 50, 250);
         c.addSlider("Particle Size on Screen", (int) particleSize, value -> particleSize = value, 1, 5, 0, 1);
         c.addCheckBox("Wrap World", settings.isWrap(), settings::setWrap);
         c.addCheckBox("Draw Matrix", drawForceDiagram, state -> drawForceDiagram = state);
-        c.addButton("Save Screenshot", this::requestScreenshot);
-        c.addCheckBox("Use Fixed Timestep", useFixedTimeStep, state -> useFixedTimeStep = state);
-        c.addSlider("Fixed TimeStep (ms)", (int) fixedTimeStepValueMillis, value -> fixedTimeStepValueMillis = value,
-                1, 100, 1, 10);
 
         frame.setVisible(true);
         //frame.setLocationRelativeTo(null);  // center window on screen
@@ -532,12 +515,15 @@ public class Renderer {
         } else if (r instanceof RequestMatrix) {
 
             RequestMatrix req = (RequestMatrix) r;
-            boolean matrixSizeChanged = req.matrix.size() != settings.getMatrix().size();
+
+            int requestedMatrixSize = req.matrix.size();
+            int oldMatrixSize = settings.getMatrix().size();
+
+            if (requestedMatrixSize != oldMatrixSize) {
+                handleRequest(new RequestMatrixSize(requestedMatrixSize));
+            }
 
             settings.setMatrix(req.matrix);
-            if (matrixSizeChanged) {
-                calcColors();
-            }
 
             notifyMatrixChangeListeners();
 
@@ -646,8 +632,8 @@ public class Renderer {
 
                 if (requestedMatrixSize < oldMatrixSize) {
                     // remove points of types that now no longer exist
-                    for (int i = requestedMatrixSize; i < oldMatrixSize; i++) {
-                        request(new RequestRemoveType(i));
+                    for (int i = oldMatrixSize - 1; i >= requestedMatrixSize; i--) {
+                        handleRequest(new RequestRemoveType(i));
                     }
                 } else {
                     logic.Matrix oldMatrix = settings.getMatrix();
@@ -986,10 +972,6 @@ public class Renderer {
         return particleDensity;
     }
 
-    public boolean isScreenshotRequested() {
-        return screenshotRequested;
-    }
-
     public int getMatrixInitializerIndex() {
         return currentMatrixInitializerIndex;
     }
@@ -1044,47 +1026,5 @@ public class Renderer {
 
     public void request(Request r) {
         requests.add(r);
-    }
-
-    // REQUESTS (OLD)
-
-    private void requestScreenshot() {
-        screenshotRequested = true;
-    }
-
-    public void requestMatrixSize(int matrixSize) {
-        //todo: remove
-        // nextMatrixSize = matrixSize;
-    }
-
-    private void requestMatrix(Matrix matrix) {
-        //todo: remove
-        //requestedMatrix = matrix;
-    }
-
-    public void requestParticleDensity(float density) {
-        //todo: remove
-        // requestedParticleDensity = density;
-    }
-
-    /**
-     * use this if you want to call {@link #reset()} from another Thread
-     */
-    public void requestReset() {
-        //todo: remove
-        // resetRequested = true;
-    }
-
-    /**
-     * use this if you want to call <code>respawn()</code> from another Thread
-     */
-    public void requestRespawn() {
-        //todo: remove
-        // respawnRequested = true;
-    }
-
-    private void requestMatrixInitializerIndex(int index) {
-        //todo: remove
-        //requestedMatrixInitializerIndex = index;
     }
 }
