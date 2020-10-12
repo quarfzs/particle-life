@@ -6,6 +6,7 @@ import logic.Updater;
 import logic.UpdaterLogic;
 import gui.colormaker.ColorMaker;
 import processing.core.PGraphics;
+import processing.core.PImage;
 import requests.*;
 
 import javax.swing.*;
@@ -76,9 +77,14 @@ public class Renderer {
         void onFrame();
     }
 
+    public interface ScreenshotListener {
+        void onScreenshot(PImage img);
+    }
+
     public ArrayList<MatrixChangeListener> matrixChangeListeners = new ArrayList<>();
     public ArrayList<ParticleDensityListener> particleDensityListeners = new ArrayList<>();
     public ArrayList<FrameListener> frameListeners = new ArrayList<>();
+    public ArrayList<ScreenshotListener> screenshotListeners = new ArrayList<>();
 
     public void addMatrixChangeListener(MatrixChangeListener listener) {
         matrixChangeListeners.add(listener);
@@ -105,6 +111,14 @@ public class Renderer {
 
     private void notifyFrameListeners() {
         frameListeners.forEach(FrameListener::onFrame);
+    }
+
+    public void addScreenshotListener(ScreenshotListener listener) {
+        screenshotListeners.add(listener);
+    }
+
+    private void notifyScreenshotListeners(PImage img) {
+        screenshotListeners.forEach(listener -> listener.onScreenshot(img));
     }
 
     public Renderer(float width, float height, ColorMaker colorMaker) {
@@ -648,7 +662,12 @@ public class Renderer {
 
         } else if (r instanceof RequestScreenshot) {
 
-            //todo
+            PGraphics context = ((RequestScreenshot) r).context;
+            context.beginDraw();
+            context.background(0, 0, 0);
+            drawParticles(context);
+            context.endDraw();
+            notifyScreenshotListeners(context.copy());
 
         } else if (r instanceof RequestRemoveType) {
 

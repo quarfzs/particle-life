@@ -3,9 +3,13 @@ package gui;
 import engine.Renderer;
 import guilib.GraphicalInterface;
 import guilib.GraphicalInterfaceWrapper;
+import guilib.GraphicsProvider;
 import guilib.widgets.*;
+import processing.core.PImage;
 import requests.*;
 
+import javax.swing.*;
+import java.io.File;
 import java.util.Map;
 
 public class Main {
@@ -13,6 +17,8 @@ public class Main {
     public static void main(String[] args) {
         GraphicalInterfaceWrapper.open("layout.xml", "root", Main::new);
     }
+
+    private final GraphicsProvider graphicsProvider;
 
     private CanvasWidget canvas;
     private MatrixWidget matrixWidget;
@@ -23,6 +29,7 @@ public class Main {
     private Button respawnButton;
     private Button randomAndRespawnButton;
     private Button randomTypesButton;
+    private Button screenshotButton;
     private Toggle toggleRunning;
     private Toggle toggleReplaceRemoved;
     private Label statsLabel;
@@ -36,6 +43,8 @@ public class Main {
     private FloatSlider rMaxSlider;
 
     public Main(GraphicalInterface g) {
+
+        graphicsProvider = g.graphicsProvider;
 
         Map<String, Widget> widgets = g.getWidgetMap();
 
@@ -70,6 +79,7 @@ public class Main {
         respawnButton = (Button) widgets.get("respawn-button");
         randomAndRespawnButton = (Button) widgets.get("random-and-respawn-button");
         randomTypesButton = (Button) widgets.get("random-types-button");
+        screenshotButton = (Button) widgets.get("screenshot-button");
         initializerSelector = (Selector) widgets.get("initializer-selector");
         spawnSelector = (Selector) widgets.get("spawn-selector");
         frictionSlider = (FloatSlider) widgets.get("friction-slider");
@@ -110,6 +120,7 @@ public class Main {
                     "n: %d",
                     renderer.getFps(), renderer.getAvgPhysicsCalcTime(), renderer.getAvgRenderingTime(), renderer.getParticleCount()));
         });
+        renderer.addScreenshotListener(this::saveScreenshot);
     }
 
     private void attachListenersToWidgets() {
@@ -135,6 +146,10 @@ public class Main {
         });
         randomTypesButton.setOnClickListener(() -> canvas.getRenderer().request(new RequestRandomTypes()));
 
+        screenshotButton.setOnClickListener(() -> canvas.getRenderer().request(new RequestScreenshot(
+                graphicsProvider.createGraphics(canvas.getWidth(), canvas.getHeight())
+        )));
+
         initializerSelector.addSelectionChangeListener((index, entry) -> canvas.getRenderer().request(new RequestMatrixInitializerIndex(index)));
 
         spawnSelector.addSelectionChangeListener((index, entry) -> canvas.getRenderer().request(new RequestSpawnMode(index)));
@@ -145,5 +160,14 @@ public class Main {
         forceSlider.addChangeListener(value -> canvas.getRenderer().request(new RequestForce((float) value)));
         rMinSlider.addChangeListener(value -> canvas.getRenderer().request(new RequestRMin((float) value)));
         rMaxSlider.addChangeListener(value -> canvas.getRenderer().request(new RequestRMax((float) value)));
+    }
+
+    private void saveScreenshot(PImage image) {
+        JFrame frame = new JFrame("Save Screenshot");
+        JFileChooser fileChooser = new JFileChooser();
+        if (fileChooser.showSaveDialog(frame) == JFileChooser.APPROVE_OPTION) {
+            File file = fileChooser.getSelectedFile();
+            image.save(file.getAbsolutePath());
+        }
     }
 }

@@ -29,7 +29,7 @@ public class GraphicalInterface {
         }
     }
 
-    private final GraphicsProvider graphicsProvider;
+    public final GraphicsProvider graphicsProvider;
     private final Widget rootWidget;
     private WidgetAndPos activeWidpos;
     private Map<String, Widget> widgetMap;
