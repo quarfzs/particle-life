@@ -13,6 +13,7 @@
                 <Button id="random-types-button">Random Types</Button>
                 <Container id="matrix-container" width="40" height="40" />
                 <Toggle id="toggle-replace-removed" state="false">Replace Removed</Toggle>
+                <Label id="stats-label">Stats</Label>
             </ListView>
         </ScrollView>
     </horizontal>

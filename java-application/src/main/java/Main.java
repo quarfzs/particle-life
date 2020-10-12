@@ -122,7 +122,7 @@ public class Main extends PApplet {
         float timeUpdate = (t2 - t1) / 1000000.f;
         float timeDraw = (t3 - t2) / 1000000.f;
 
-        if (renderer.shouldDrawRenderingStats()) {
+        if (true) { // todo: remove
 
             lastUpdateTimes[lastUpdateTimeIndex] = timeUpdate;
             lastUpdateTimeIndex = (lastUpdateTimeIndex+=1) % lastUpdateTimes.length;

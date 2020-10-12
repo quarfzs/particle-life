@@ -25,6 +25,7 @@ public class Main {
     private Button randomTypesButton;
     private Toggle toggleRunning;
     private Toggle toggleReplaceRemoved;
+    private Label statsLabel;
     private Selector initializerSelector;
     private Selector spawnSelector;
     private FloatSlider frictionSlider;
@@ -47,9 +48,9 @@ public class Main {
 
                 // this should be called every time the render instance changes:
                 copyValues(renderer);
-                attachRenderListeners(renderer);
+                attachListenersToRenderer(renderer);
 
-                attachListeners();
+                attachListenersToWidgets();
 
             } else {
                 System.out.println("Warning: Canvas.getRenderer() returned null!");
@@ -61,6 +62,7 @@ public class Main {
 
         toggleRunning = (Toggle) widgets.get("toggle-running");
         toggleReplaceRemoved = (Toggle) widgets.get("toggle-replace-removed");
+        statsLabel = (Label) widgets.get("stats-label");
         heatSlider = (FloatSlider) widgets.get("heat-slider");
         typesSlider = (IntSlider) widgets.get("types-slider");
         densitySlider = (FloatSlider) widgets.get("density-slider");
@@ -94,15 +96,23 @@ public class Main {
         rMaxSlider.setValue(renderer.getSettings().getRMax());
     }
 
-    private void attachRenderListeners(Renderer renderer) {
+    private void attachListenersToRenderer(Renderer renderer) {
         renderer.addMatrixChangeListener(matrix -> {
             matrixWidget.matrixChanged(matrix);
             typesSlider.setValue(matrix.size());
         });
         renderer.addParticleDensityListener((n, density) -> densitySlider.setValue(density));
+        renderer.addFrameListener(() -> {
+            statsLabel.setText(String.format(
+                    "fps: %.0f%n" +
+                    "update: %.1f ms%n" +
+                    "draw: %.1f ms%n" +
+                    "n: %d",
+                    renderer.getFps(), renderer.getAvgPhysicsCalcTime(), renderer.getAvgRenderingTime(), renderer.getParticleCount()));
+        });
     }
 
-    private void attachListeners() {
+    private void attachListenersToWidgets() {
 
         matrixWidget.addMatrixChangeListener((i, j, value) -> canvas.getRenderer().request(new RequestMatrixValue(i, j, value)));
         matrixWidget.addRemoveTypeListener(index -> canvas.getRenderer().request(

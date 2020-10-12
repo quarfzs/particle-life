@@ -22,6 +22,10 @@ public class Renderer {
     private boolean useFixedTimeStep = false;
     private float fixedTimeStepValueMillis = 16;
 
+    private final Clock generalClock = new Clock();
+    private final Clock physicsClock = new Clock();
+    private final Clock renderingClock = new Clock();
+
     private float particleDensity = 0.002f;
     private int nParticles;
     private float particleSize = 2;
@@ -38,7 +42,6 @@ public class Renderer {
     private HashMap<Integer, Integer> typeColorMap;
 
     private boolean drawForceDiagram = false;
-    private boolean drawRenderingStats = false;
 
     private float mouseX = 0;
     private float mouseY = 0;
@@ -69,8 +72,13 @@ public class Renderer {
         void onChange(int n, float density);
     }
 
+    public interface FrameListener {
+        void onFrame();
+    }
+
     public ArrayList<MatrixChangeListener> matrixChangeListeners = new ArrayList<>();
     public ArrayList<ParticleDensityListener> particleDensityListeners = new ArrayList<>();
+    public ArrayList<FrameListener> frameListeners = new ArrayList<>();
 
     public void addMatrixChangeListener(MatrixChangeListener listener) {
         matrixChangeListeners.add(listener);
@@ -86,6 +94,17 @@ public class Renderer {
 
     private void notifyParticleDensityChangeListeners() {
         particleDensityListeners.forEach(listener -> listener.onChange(nParticles, particleDensity));
+    }
+
+    /**
+     * @param listener a callback that will be invoked every time a frame has been drawn by this Renderer.
+     */
+    public void addFrameListener(FrameListener listener) {
+        frameListeners.add(listener);
+    }
+
+    private void notifyFrameListeners() {
+        frameListeners.forEach(FrameListener::onFrame);
     }
 
     public Renderer(float width, float height, ColorMaker colorMaker) {
@@ -234,7 +253,6 @@ public class Renderer {
         c.addSlider("Particle Size on Screen", (int) particleSize, value -> particleSize = value, 1, 5, 0, 1);
         c.addCheckBox("Wrap World", settings.isWrap(), settings::setWrap);
         c.addCheckBox("Draw Matrix", drawForceDiagram, state -> drawForceDiagram = state);
-        c.addCheckBox("Draw Rendering Stats", drawRenderingStats, state -> drawRenderingStats = state);
         c.addButton("Save Screenshot", this::requestScreenshot);
         c.addCheckBox("Use Fixed Timestep", useFixedTimeStep, state -> useFixedTimeStep = state);
         c.addSlider("Fixed TimeStep (ms)", (int) fixedTimeStepValueMillis, value -> fixedTimeStepValueMillis = value,
@@ -480,47 +498,6 @@ public class Renderer {
         while (!requests.isEmpty()) {
             handleRequest(requests.remove());
         }
-
-        /*
-        if (screenshotRequested) {
-            screenshotRequested = false;
-        }
-
-        if (requestedParticleDensity != particleDensity) {
-            particleDensity = requestedParticleDensity;
-            nParticles = calcParticleCount();
-        }
-
-        if (requestedMatrix != null) {
-            boolean matrixSizeChanged = requestedMatrix.size() != matrix.size();
-            matrix = requestedMatrix;
-            requestedMatrix = null;
-            nextMatrixSize = matrix.size();
-            settings.setMatrix(matrix);
-            if (matrixSizeChanged) {
-                calcColors();
-                respawn();
-            }
-
-            notifyMatrixChangeListeners();
-        }
-
-        if (nextMatrixSize != matrix.size()) {
-            requestReset();
-        }
-
-        if (requestedMatrixInitializerIndex != currentMatrixInitializerIndex) {
-            currentMatrixInitializerIndex = requestedMatrixInitializerIndex;
-            requestReset();
-        }
-
-        if (resetRequested) {
-            resetRequested = false;
-            reset();
-        } else if (respawnRequested) {
-            respawnRequested = false;
-            respawn();
-        }*/
 
         camera.update(updater, dt);
     }
@@ -780,6 +757,8 @@ public class Renderer {
 
     public void update(float dt) {
 
+        physicsClock.in();
+
         if (!paused) {
             if (useFixedTimeStep) {
                 settings.setDt(fixedTimeStepValueMillis / 1000f);
@@ -794,6 +773,8 @@ public class Renderer {
         if (!paused) {
             updater.updatePositions(settings, this.updaterLogic);
         }
+
+        physicsClock.out();
     }
 
     private void applyDrag() {
@@ -862,6 +843,8 @@ public class Renderer {
 
     public void draw(PGraphics context) {
 
+        renderingClock.in();
+
         context.pushStyle();
         context.pushMatrix();
 
@@ -882,17 +865,17 @@ public class Renderer {
         context.popMatrix();
         context.popStyle();
 
+        //todo remove
         if (drawForceDiagram) {
             drawForces(context, settings.getMatrix());
         }
 
-        if (drawRenderingStats) {
-            context.pushStyle();
-            context.textAlign(context.RIGHT, context.BOTTOM);
-            context.fill(255);
-            context.text(nParticles, context.width, context.height);
-            context.popStyle();
-        }
+        renderingClock.out();
+
+        generalClock.out();
+        generalClock.in();
+
+        notifyFrameListeners();
     }
 
     public void drawParticles(PGraphics context) {
@@ -976,10 +959,6 @@ public class Renderer {
         context.popStyle();
     }
 
-    public boolean shouldDrawRenderingStats() {
-        return drawRenderingStats;
-    }
-
     public int getParticleCount() {
         return nParticles;
     }
@@ -1010,6 +989,38 @@ public class Renderer {
 
     public boolean isPaused() {
         return paused;
+    }
+
+    /**
+     * @return the average time needed for executing the draw() method.
+     */
+    public double getAvgRenderingTime() {
+        return renderingClock.getTime();
+    }
+
+    /**
+     * @return the average time in ms needed for executing the update() method.
+     */
+    public double getAvgPhysicsCalcTime() {
+        return physicsClock.getTime();
+    }
+
+    /**
+     * @return the average time in ms passing between two draw() calls.
+     */
+    public double getFrameTime() {
+        return generalClock.getTime();
+    }
+    /**
+     * @return <code>1000 / getFrameTime()</code>
+     */
+    public double getFps() {
+        double avgDt = getFrameTime();
+        if (avgDt != 0) {
+            return 1000 / avgDt;
+        } else {
+            return 0;
+        }
     }
 
     public void request(Request r) {
