@@ -113,24 +113,22 @@ abstract class SliderBase extends Widget {
     }
 
     protected void renderLine(PGraphics context, int x1, int x2, int y, boolean dragging, boolean hovering) {
+        int color = Theme.getTheme().primary;
         if (dragging || hovering) {
-            context.stroke(Theme.getInstance().secondary);
-        } else {
-            context.stroke(Theme.getInstance().primary);
+            color = Utility.light(color, 1.3);
         }
+        context.stroke(color);
         context.line(x1, y, x2, y);
     }
 
     protected void renderKnob(PGraphics context, int x, int y, boolean dragging, boolean hovering) {
         // knob
         context.stroke(0, 0, 0);
-        if (dragging) {
-            context.fill(Theme.getInstance().secondary);
-        } else if (hovering) {
-            context.fill(Utility.light(Theme.getInstance().primary, 0.95));
-        } else {
-            context.fill(Utility.light(Theme.getInstance().primary, 1.0));
+        int fillColor = Theme.getTheme().primary;
+        if (dragging || hovering) {
+            fillColor = Utility.light(fillColor, 1.3);
         }
+        context.fill(fillColor);
         context.ellipseMode(PConstants.CENTER);
         context.ellipse(x, y, knobRadius * 2, knobRadius * 2);
     }

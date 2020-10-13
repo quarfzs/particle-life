@@ -111,7 +111,7 @@ public class Toggle extends Widget {
         clear(context);
 
         // switch
-        int color = state ? Theme.getInstance().onColor : Theme.getInstance().offColor;
+        int color = state ? Theme.getTheme().onColor : Theme.getTheme().offColor;
         if (highlighted) {
             color = Utility.light(color, 1.1);
         }

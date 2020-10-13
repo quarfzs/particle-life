@@ -28,6 +28,7 @@ public class Main implements App<MyAppState> {
     private Button randomAndRespawnButton;
     private Button randomTypesButton;
     private Button screenshotButton;
+    private Toggle darkModeToggle;
     private Toggle togglePause;
     private Toggle toggleReplaceRemoved;
     private Label statsLabel;
@@ -55,17 +56,20 @@ public class Main implements App<MyAppState> {
             if (renderer != null) {
 
                 if (state != null) {
+                    Theme.setDarkMode(state.darkMode);
+                    g.requestRenderForAll();
+
                     renderer.request(new RequestParticles(state.particles));
                     renderer.request(new RequestSettings(state.settings));
                     renderer.request(new RequestRendererSettings(state.rendererSettings));
-                }
 
-                renderer.handleRequests();  // handle requests before copying values to GUI!
+                    renderer.handleRequests();  // handle requests before copying values to GUI!
+                }
 
                 // this should be called every time the Renderer instance changes:
                 copyValues(renderer);
                 attachListenersToRenderer(renderer);
-                attachListenersToWidgets();
+                attachListenersToWidgets(g);
 
             } else {
                 System.out.println("Warning: Canvas.getRenderer() returned null!");
@@ -86,6 +90,7 @@ public class Main implements App<MyAppState> {
         randomAndRespawnButton = (Button) widgets.get("random-and-respawn-button");
         randomTypesButton = (Button) widgets.get("random-types-button");
         screenshotButton = (Button) widgets.get("screenshot-button");
+        darkModeToggle = (Toggle) widgets.get("dark-mode-toggle");
         initializerSelector = (Selector) widgets.get("initializer-selector");
         spawnSelector = (Selector) widgets.get("spawn-selector");
         frictionSlider = (FloatSlider) widgets.get("friction-slider");
@@ -104,7 +109,8 @@ public class Main implements App<MyAppState> {
         return new MyAppState(
                 renderer.getParticles(),
                 renderer.getSettings().clone(),
-                renderer.getRendererSettings()
+                renderer.getRendererSettings(),
+                darkModeToggle.getState()
         );
     }
 
@@ -122,6 +128,7 @@ public class Main implements App<MyAppState> {
         forceSlider.setValue(renderer.getSettings().getForceFactor());
         rMinSlider.setValue(renderer.getSettings().getRMin());
         rMaxSlider.setValue(renderer.getSettings().getRMax());
+        darkModeToggle.setState(Theme.getTheme().darkMode);
     }
 
     private void attachListenersToRenderer(Renderer renderer) {
@@ -141,7 +148,7 @@ public class Main implements App<MyAppState> {
         renderer.addScreenshotListener(this::saveScreenshot);
     }
 
-    private void attachListenersToWidgets() {
+    private void attachListenersToWidgets(GraphicalInterface g) {
 
         matrixWidget.addMatrixChangeListener((i, j, value) -> canvas.getRenderer().request(new RequestMatrixValue(i, j, value)));
         matrixWidget.addRemoveTypeListener(index -> canvas.getRenderer().request(
@@ -178,6 +185,11 @@ public class Main implements App<MyAppState> {
         forceSlider.addChangeListener(value -> canvas.getRenderer().request(new RequestForce((float) value)));
         rMinSlider.addChangeListener(value -> canvas.getRenderer().request(new RequestRMin((float) value)));
         rMaxSlider.addChangeListener(value -> canvas.getRenderer().request(new RequestRMax((float) value)));
+
+        darkModeToggle.setChangeListener(darkMode -> {
+            Theme.setDarkMode(darkMode);
+            g.requestRenderForAll();
+        });
     }
 
     private void saveScreenshot(PImage image) {

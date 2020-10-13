@@ -164,7 +164,7 @@ public class TextInput extends Widget {
         // frame
         if (active) {
             context.noFill();
-            context.stroke(Theme.getInstance().primary);
+            context.stroke(Theme.getTheme().primary);
             context.strokeWeight(1);
             context.rect(0, 0, width - 1, height - 1);
         }

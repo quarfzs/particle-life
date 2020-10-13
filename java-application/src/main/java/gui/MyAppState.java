@@ -12,11 +12,13 @@ public class MyAppState implements AppState {
     public Particles particles;
     public Settings settings;
     public RendererSettings rendererSettings;
+    public boolean darkMode;
 
-    public MyAppState(Particles particles, Settings settings, RendererSettings rendererSettings) {
+    public MyAppState(Particles particles, Settings settings, RendererSettings rendererSettings, boolean darkMode) {
         this.particles = particles;
         this.settings = settings;
         this.rendererSettings = rendererSettings;
+        this.darkMode = darkMode;
     }
 
     public MyAppState() {
@@ -29,6 +31,7 @@ public class MyAppState implements AppState {
         readParticlesJson((JSONObject) data.get("particles"));
         readSettingsJson((JSONObject) data.get("settings"));
         readRendererSettingsJson((JSONObject) data.get("rendering"));
+        darkMode = data.getBoolean("darkmode");
     }
 
     @Override
@@ -38,6 +41,7 @@ public class MyAppState implements AppState {
 
         data.put("settings", createSettingsJson());
         data.put("rendering", createRendererSettingsJson());
+        data.put("darkmode", darkMode);
         data.put("particles", createParticlesJson());
 
         return data.toString();

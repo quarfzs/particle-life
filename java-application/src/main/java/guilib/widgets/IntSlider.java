@@ -28,11 +28,11 @@ public class IntSlider extends SliderBase {
 
     @Override
     protected void renderLine(PGraphics context, int x1, int x2, int y, boolean dragging, boolean hovering) {
+        int color = Theme.getTheme().primary;
         if (dragging || hovering) {
-            context.stroke(Theme.getInstance().secondary);
-        } else {
-            context.stroke(Theme.getInstance().primary);
+            color = Utility.light(color, 1.1);
         }
+        context.stroke(color);
         context.line(x1, y, x2, y);
 
         int lineWidth = getWidth() - 2 * getMargin();

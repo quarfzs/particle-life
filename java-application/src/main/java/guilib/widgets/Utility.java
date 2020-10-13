@@ -1,5 +1,6 @@
 package guilib.widgets;
 
+import guilib.Theme;
 import processing.core.PConstants;
 import processing.core.PGraphics;
 
@@ -74,6 +75,8 @@ public final class Utility {
 
     public static void drawShadowOutline(PGraphics context, int left, int top, int width, int height) {
 
+        int color = Theme.getTheme().shadowColor;
+
         context.pushStyle();
         context.pushMatrix();
 
@@ -82,11 +85,11 @@ public final class Utility {
         context.noFill();
         context.strokeWeight(1);
 
-        context.stroke(context.color(0, 45));
+        context.stroke(context.color(context.red(color), context.green(color), context.blue(color), 45));
         context.line(0, 0, width, 0);
         context.line(0, 0, 0, height);
 
-        context.stroke(context.color(0, 90));
+        context.stroke(context.color(context.red(color), context.green(color), context.blue(color), 90));
         context.line(0, height, width, height);
         context.line(width, 0, width, height);
 

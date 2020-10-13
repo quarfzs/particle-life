@@ -135,6 +135,7 @@ public abstract class Widget {
     protected final void renderDebug(PGraphics context) {
         context.pushStyle();
         context.noFill();
+        context.strokeWeight(1);
         context.stroke(context.color(255,0,255));
         context.line(0,0,width,height);
         context.line(0,height,width,0);
@@ -150,7 +151,7 @@ public abstract class Widget {
     }
 
     protected final void clear(PGraphics context) {
-        clear(context, Theme.getInstance().background);
+        clear(context, Theme.getTheme().background);
     }
 
     protected abstract void render(PGraphics context);

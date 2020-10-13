@@ -32,6 +32,7 @@
                 <FloatSlider id="force-slider" min="0" max="1500">Force</FloatSlider>
                 <FloatSlider id="rmin-slider" min="0" max="100">rMin</FloatSlider>
                 <FloatSlider id="rmax-slider" min="10" max="100">rMax</FloatSlider>
+                <Toggle id="dark-mode-toggle" state="true">Dark Mode</Toggle>
                 <Button id="screenshot-button">Screenshot</Button>
             </ListView>
         </ScrollView>

@@ -132,6 +132,16 @@ public class GraphicalInterface {
         return false;
     }
 
+    public void requestRenderForAll() {
+        requestRenderRecursively(rootWidget);
+    }
+
+    public void requestRenderRecursively(Widget widget) {
+        widget.requestRender();
+        Iterable<Widget> children = widget.getChildren();
+        if (children != null) children.forEach(this::requestRenderRecursively);
+    }
+
     void mouseClicked(int x, int y, MouseButton button) {
         WidgetAndPos widpos = getWidgetAndPos(x, y);
         setActiveWidpos(widpos);

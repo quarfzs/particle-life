@@ -78,9 +78,9 @@ public class Button extends Widget {
         // background
 
         if (pressed || highlighted) {
-            context.fill(Theme.getInstance().onColor);
+            context.fill(Theme.getTheme().onColor);
         } else {
-            context.fill(Theme.getInstance().offColor);
+            context.fill(Theme.getTheme().offColor);
         }
 
         context.noStroke();
@@ -89,7 +89,7 @@ public class Button extends Widget {
         // text
 
         context.noStroke();
-        context.fill(Theme.getInstance().primaryContrast);
+        context.fill(Theme.getTheme().offColorContrast);
 
         if (context.textWidth(title) > width - 2 * padding) {
             context.textAlign(PConstants.LEFT, PConstants.CENTER);

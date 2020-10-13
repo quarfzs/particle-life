@@ -4,6 +4,8 @@ import guilib.Theme;
 import processing.core.PConstants;
 import processing.core.PGraphics;
 
+import java.util.Arrays;
+
 public class Label extends Widget {
 
     private String text;
@@ -20,7 +22,11 @@ public class Label extends Widget {
 
     @Override
     public void updateSize(int minWidth, int minHeight, int maxWidth, int maxHeight) {
-        setSize(Utility.constrainDimension(minWidth, 8 * text.length() + 2 * 3, maxWidth), Utility.constrainDimension(minHeight, 16, maxHeight));
+
+        // account for multiline texts
+        int maxLength = Arrays.stream(text.split("\n")).mapToInt(String::length).max().getAsInt();
+
+        setSize(Utility.constrainDimension(minWidth, 8 * maxLength + 2 * 3, maxWidth), Utility.constrainDimension(minHeight, 16, maxHeight));
     }
 
     @Override
@@ -30,12 +36,12 @@ public class Label extends Widget {
 
         context.noFill();
         context.noStroke();
-        context.fill(Theme.getInstance().backgroundContrast);
+        context.fill(Theme.getTheme().backgroundContrast);
         context.textAlign(PConstants.LEFT, PConstants.CENTER);
         context.text(text, padding, height / 2);
 
         context.noFill();
-        context.stroke(Theme.getInstance().background);
+        context.stroke(Theme.getTheme().background);
         context.strokeWeight(padding);
         context.rect(0, 0, width, height);
     }
