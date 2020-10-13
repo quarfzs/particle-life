@@ -7,10 +7,14 @@
         <ScrollView orientation="horizontal">
             <ListView orientation="horizontal" margin="10">
                 <Toggle id="toggle-pause" state="false">Pause</Toggle>
-                <Button id="random-button">Random Matrix [R]</Button>
-                <Button id="respawn-button">Respawn [S]</Button>
-                <Button id="random-and-respawn-button">Random Matrix &amp; Respawn [Q]</Button>
-                <Button id="random-types-button">Random Types</Button>
+                <ListView orientation="vertical" margin="5">
+                    <Button id="random-button">Random Matrix [R]</Button>
+                    <Button id="respawn-button">Respawn [S]</Button>
+                    <Button id="random-and-respawn-button">Random Matrix &amp; Respawn [Q]</Button>
+                </ListView>
+                <ListView>
+                    <Button id="random-types-button">Random Types</Button>
+                </ListView>
                 <Container id="matrix-container" width="40" height="40" />
                 <Toggle id="toggle-replace-removed" state="false">Replace Removed</Toggle>
                 <Label id="stats-label">Stats</Label>
@@ -21,7 +25,7 @@
         <ScrollView orientation="vertical">
             <ListView margin="4" orientation="vertical" align="start">
                 <FloatSlider id="density-slider" min="0" max="2" digits="2">Density in %</FloatSlider>
-                <Label>Settings</Label>
+                <Label>|Qpq][{\}/ÈILÊ^^</Label>
                 <FloatSlider id="heat-slider" min="0" max="200" digits="0">Heat</FloatSlider>
                 <IntSlider id="types-slider" min="1" max="17" step="1">Types</IntSlider>
                 <Selector id="initializer-selector" title="Matrix Initializer [R]">random,chains,chains 2,equality</Selector>

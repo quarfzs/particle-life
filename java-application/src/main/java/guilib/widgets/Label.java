@@ -24,9 +24,14 @@ public class Label extends Widget {
     public void updateSize(int minWidth, int minHeight, int maxWidth, int maxHeight) {
 
         // account for multiline texts
-        int maxLength = Arrays.stream(text.split("\n")).mapToInt(String::length).max().getAsInt();
+        String[] lines = text.split("\n");
+        int nLines = lines.length;
+        int maxLineLength = Arrays.stream(lines).mapToInt(String::length).max().getAsInt();
 
-        setSize(Utility.constrainDimension(minWidth, 8 * maxLength + 2 * 3, maxWidth), Utility.constrainDimension(minHeight, 16, maxHeight));
+        setSize(
+                Utility.constrainDimension(minWidth, 8 * maxLineLength + 2 * 3, maxWidth),
+                Utility.constrainDimension(minHeight, nLines * 18, maxHeight)
+        );
     }
 
     @Override
@@ -38,7 +43,7 @@ public class Label extends Widget {
         context.noStroke();
         context.fill(Theme.getTheme().backgroundContrast);
         context.textAlign(PConstants.LEFT, PConstants.CENTER);
-        context.text(text, padding, height / 2);
+        context.text(text, padding, height / 2 - 1);
 
         context.noFill();
         context.stroke(Theme.getTheme().background);

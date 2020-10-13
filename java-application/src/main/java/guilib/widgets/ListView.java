@@ -24,12 +24,20 @@ public class ListView extends Widget {
 
         if (orientation == Orientation.HORIZONTAL) {
 
-            setHeight(maxHeight);
+            // pref. height = max pref. height of children
+            int prefHeight = 0;
+            for (Widget child : children) {
+                child.updateSize(0, 0, -1, -1);
+                if (child.getHeight() > prefHeight) {
+                    prefHeight = child.getHeight();
+                }
+            }
+            setHeight(Utility.constrainDimension(minHeight, prefHeight, maxHeight));
 
             int totalWidth = 0;
 
             for (Widget child : children) {
-                child.updateSize(0, getHeight(), -1, getHeight());
+                child.updateSize(0, 0, -1, getHeight());
 
                 child.dx = totalWidth;
                 child.dy = alignChild(child.getHeight());
@@ -45,7 +53,15 @@ public class ListView extends Widget {
 
         } else {
 
-            setWidth(maxWidth);
+            // pref. width = max pref. width of children
+            int prefWidth = 0;
+            for (Widget child : children) {
+                child.updateSize(0, 0, -1, -1);
+                if (child.getWidth() > prefWidth) {
+                    prefWidth = child.getWidth();
+                }
+            }
+            setWidth(Utility.constrainDimension(minWidth, prefWidth, maxWidth));
 
             int totalHeight = 0;
 

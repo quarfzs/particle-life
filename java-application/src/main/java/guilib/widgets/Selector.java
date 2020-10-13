@@ -75,31 +75,31 @@ public class Selector extends Widget {
     @Override
     public void updateSize(int minWidth, int minHeight, int maxWidth, int maxHeight) {
 
-        // get pref. width of labels
+        // get pref. width of title label
         titleLabel.updateSize(0, 0, 0, -1);
-        entryLabel.updateSize(0, 0, 0, -1);
-        int prefWidth = Math.max(titleLabel.getWidth(), entryLabel.getWidth());
+        int prefWidth = titleLabel.getWidth();
         int actualWidth = Utility.constrainDimension(minWidth, prefWidth, maxWidth);
 
-        // get actual heights of labels
+        // set & get actual heights of labels
         titleLabel.updateSize(actualWidth, 0, actualWidth, -1);
         entryLabel.updateSize(actualWidth, 0, actualWidth, -1);
-        int prefHeight = titleLabel.getHeight() + entryLabel.getHeight();
+        int prefHeight = titleLabel.getHeight() +
+                Math.max(entryLabel.getHeight(), Math.max(button1.getHeight(), button2.getHeight()));
 
         setSize(actualWidth, Utility.constrainDimension(minHeight, prefHeight, maxHeight));
+
+        int entryLabelWidth = getWidth() - (button1.getWidth() + button2.getWidth());
 
         int upperPartSize = titleLabel.getHeight();
         int lowerPartSize = getHeight() - upperPartSize;
 
-        button1.dy = upperPartSize;
-        button2.dy = upperPartSize;
-        entryLabel.dy = upperPartSize;
-
-        entryLabel.dx = button1.getWidth();
-        button2.dx = getWidth() - button2.getWidth();
-
-        int entryLabelWidth = getWidth() - (button1.getWidth() + button2.getWidth());
         entryLabel.updateSize(entryLabelWidth, lowerPartSize, entryLabelWidth, lowerPartSize);
+
+        button1.dy = upperPartSize + (lowerPartSize - button1.getHeight()) / 2;
+        button2.dy = upperPartSize  + (lowerPartSize - button2.getHeight()) / 2;
+        entryLabel.dy = upperPartSize + (lowerPartSize - entryLabel.getHeight()) / 2;
+        button2.dx = getWidth() - button2.getWidth();
+        entryLabel.dx = button1.getWidth();
     }
 
     @Override
