@@ -129,7 +129,7 @@ public class Renderer {
         this.camera = new Camera(width / 2f, height / 2f);
 
         initAttractionSetters();
-        settings.setMatrix(new Matrix(6, (i, j) -> 0));
+        settings.setMatrix(new Matrix(6));
         makeMatrix();
 
         this.updater = new MultithreadedUpdater();
@@ -322,14 +322,74 @@ public class Renderer {
     private void initAttractionSetters() {
 
         final Matrix.Initializer randomInitializer = (i, j) -> Helper.uniform(-1, 1);
-        addAttractionSetter("random f", randomInitializer);
+        addAttractionSetter("random", randomInitializer);
+
+        addAttractionSetter("randomize 0.1", new Matrix.Initializer() {
+
+            private logic.Matrix from;
+
+            @Override
+            public void init(logic.Matrix from) {
+                this.from = from;
+            }
+
+            @Override
+            public float getValue(int i, int j) {
+                return Helper.constrain(-1, from.get(i, j) + Helper.uniformRadius(0.1f), 1);
+            }
+        });
+
+        addAttractionSetter("randomize 0.5", new Matrix.Initializer() {
+
+            private logic.Matrix from;
+
+            @Override
+            public void init(logic.Matrix from) {
+                this.from = from;
+            }
+
+            @Override
+            public float getValue(int i, int j) {
+                return Helper.constrain(-1, from.get(i, j) + Helper.uniformRadius(0.5f), 1);
+            }
+        });
+
+        addAttractionSetter("flip", new Matrix.Initializer() {
+
+            private logic.Matrix from;
+
+            @Override
+            public void init(logic.Matrix from) {
+                this.from = from;
+            }
+
+            @Override
+            public float getValue(int i, int j) {
+                return from.get(j, i);
+            }
+        });
+
+        addAttractionSetter("rotate", new Matrix.Initializer() {
+
+            private logic.Matrix from;
+
+            @Override
+            public void init(logic.Matrix from) {
+                this.from = from;
+            }
+
+            @Override
+            public float getValue(int i, int j) {
+                return from.get(Helper.modulo(i - 1, from.size()), Helper.modulo(j - 1, from.size()));
+            }
+        });
 
         addAttractionSetter("chains", new Matrix.Initializer() {
             private int n;
 
             @Override
-            public void init(int n) {
-                this.n = n;
+            public void init(logic.Matrix from) {
+                this.n = from.size();
             }
 
             @Override
@@ -345,33 +405,13 @@ public class Renderer {
             }
         });
 
-        addAttractionSetter("random chains", new Matrix.Initializer() {
-            private int n;
+        addAttractionSetter("random equality", new Matrix.Initializer() {
 
-            @Override
-            public void init(int n) {
-                this.n = n;
-            }
-
-            @Override
-            public float getValue(int i, int j) {
-                if (j == i) {
-                    return Helper.uniform(0.2f, 1.0f);
-                } else if (j == Helper.modulo(i - 1, n)) {
-                    return 0.0f;
-                } else if (j == Helper.modulo(i + 1, n)) {
-                    return 0.2f;
-                }
-                return Helper.uniform(-0.0f, 0.0f);
-            }
-        });
-
-        addAttractionSetter("equal pairs", new Matrix.Initializer() {
             private Matrix m;
 
             @Override
-            public void init(int n) {
-                m = new Matrix(n, randomInitializer);
+            public void init(logic.Matrix from) {
+                m = new Matrix(from.size(), randomInitializer);
             }
 
             @Override
@@ -387,7 +427,7 @@ public class Renderer {
      */
     private void makeMatrix() {
         settings.setMatrix(
-                new Matrix(settings.getMatrix().size(),
+                new Matrix(settings.getMatrix(),
                 matrixInitializers.get(currentMatrixInitializerIndex))
         );
     }
