@@ -28,7 +28,7 @@ public class Main implements App<MyAppState> {
     private Button randomAndRespawnButton;
     private Button randomTypesButton;
     private Button screenshotButton;
-    private Toggle toggleRunning;
+    private Toggle togglePause;
     private Toggle toggleReplaceRemoved;
     private Label statsLabel;
     private Selector initializerSelector;
@@ -75,7 +75,7 @@ public class Main implements App<MyAppState> {
         matrixWidget = new MatrixWidget();
         ((Container) widgets.get("matrix-container")).setContent(matrixWidget);
 
-        toggleRunning = (Toggle) widgets.get("toggle-running");
+        togglePause = (Toggle) widgets.get("toggle-pause");
         toggleReplaceRemoved = (Toggle) widgets.get("toggle-replace-removed");
         statsLabel = (Label) widgets.get("stats-label");
         heatSlider = (FloatSlider) widgets.get("heat-slider");
@@ -109,7 +109,7 @@ public class Main implements App<MyAppState> {
     }
 
     private void copyValues(Renderer renderer) {
-        toggleRunning.setState(!renderer.isPaused());
+        togglePause.setState(renderer.isPaused());
         matrixWidget.matrixChanged(renderer.getSettings().getMatrix());
         typesSlider.setValue(renderer.getSettings().getMatrix().size());
         densitySlider.setValue(renderer.getParticleDensity());
@@ -153,7 +153,7 @@ public class Main implements App<MyAppState> {
         typesSlider.addChangeListener(value -> canvas.getRenderer().request(new RequestMatrixSize(value)));
         heatSlider.addChangeListener(value -> canvas.getRenderer().request(new RequestHeat((float) value)));
 
-        toggleRunning.setChangeListener(state -> canvas.getRenderer().request(new RequestPause(!state)));
+        togglePause.setChangeListener(state -> canvas.getRenderer().request(new RequestPause(state)));
         densitySlider.addChangeListener(value -> canvas.getRenderer().request(new RequestParticleDensity((float) value)));
 
         randomButton.setOnClickListener(() -> canvas.getRenderer().request(new RequestRandomMatrix()));

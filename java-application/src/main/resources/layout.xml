@@ -6,7 +6,7 @@
     <horizontal>
         <ScrollView orientation="horizontal">
             <ListView orientation="horizontal" margin="10">
-                <Toggle id="toggle-running" state="true">Play</Toggle>
+                <Toggle id="toggle-pause" state="false">Pause</Toggle>
                 <Button id="random-button">Random Matrix</Button>
                 <Button id="respawn-button">Respawn</Button>
                 <Button id="random-and-respawn-button">Random Matrix &amp; Respawn</Button>
