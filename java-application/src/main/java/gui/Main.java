@@ -54,15 +54,17 @@ public class Main implements App<MyAppState> {
             Renderer renderer = canvas.getRenderer();
             if (renderer != null) {
 
-                // this should be called every time the render instance changes:
-                copyValues(renderer);
-                attachListenersToRenderer(renderer);
-
                 if (state != null) {
-                    //todo (this is just a demo)
-                    renderer.request(new RequestMatrix(state.renderer.getSettings().getMatrix()));
+                    renderer.request(new RequestParticles(state.particles));
+                    renderer.request(new RequestSettings(state.settings));
+                    renderer.request(new RequestRendererSettings(state.rendererSettings));
                 }
 
+                renderer.handleRequests();  // handle requests before copying values to GUI!
+
+                // this should be called every time the Renderer instance changes:
+                copyValues(renderer);
+                attachListenersToRenderer(renderer);
                 attachListenersToWidgets();
 
             } else {
@@ -96,7 +98,14 @@ public class Main implements App<MyAppState> {
 
     @Override
     public MyAppState createAppState() {
-        return new MyAppState(canvas.getRenderer());
+
+        Renderer renderer = canvas.getRenderer();
+
+        return new MyAppState(
+                renderer.getParticles(),
+                renderer.getSettings().clone(),
+                renderer.getRendererSettings()
+        );
     }
 
     private void copyValues(Renderer renderer) {
@@ -142,7 +151,7 @@ public class Main implements App<MyAppState> {
         );
 
         typesSlider.addChangeListener(value -> canvas.getRenderer().request(new RequestMatrixSize(value)));
-        heatSlider.addChangeListener(value -> canvas.getRenderer().getSettings().setHeat((float) value));//todo: do request
+        heatSlider.addChangeListener(value -> canvas.getRenderer().request(new RequestHeat((float) value)));
 
         toggleRunning.setChangeListener(state -> canvas.getRenderer().request(new RequestPause(!state)));
         densitySlider.addChangeListener(value -> canvas.getRenderer().request(new RequestParticleDensity((float) value)));

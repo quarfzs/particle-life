@@ -14,6 +14,7 @@ import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import java.awt.*;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.Random;
 
@@ -143,8 +144,37 @@ public class Renderer {
         notifyMatrixChangeListeners();
     }
 
+    /**
+     * @return a data object containing a copy of all information about the particles.
+     */
+    public Particles getParticles() {
+
+        int[] types = updater.getTypes();
+        float[] positions = updater.getPositions();
+        float[] velocities = updater.getVelocities();
+
+        return new Particles(
+                settings.getMatrix().size(),
+                Arrays.copyOf(types, types.length),
+                Arrays.copyOf(positions, positions.length),
+                Arrays.copyOf(velocities, velocities.length)
+        );
+    }
+
     public Settings getSettings() {
         return settings;
+    }
+
+    /**
+     * @return a data object containing a copy of the current settings that affect the rendering.
+     */
+    public RendererSettings getRendererSettings() {
+        return new RendererSettings(
+                paused,
+                useFixedTimeStep,
+                spawnMode,
+                currentMatrixInitializerIndex
+        );
     }
 
     private int calcParticleCount() {
@@ -477,20 +507,66 @@ public class Renderer {
         }
     }
 
-    public void updateUI(float dt) {
-
-        // handle requests
-
+    /**
+     * Handles all requests in the order they were added via {@link #request(Request)}.<br>
+     * This method should be called in the same thread as the methods {@link #update()} and {@link #draw(PGraphics)}.
+     */
+    public void handleRequests() {
         while (!requests.isEmpty()) {
             handleRequest(requests.remove());
         }
+    }
 
-        camera.update(updater, dt);
+    public void updateCamera() {
+        camera.update(updater, (float) (getFrameTime() / 1000));
     }
 
     private void handleRequest(Request r) {
 
-        if (r instanceof RequestMatrixValue) {
+        if (r instanceof RequestParticles) {
+
+            Particles p = ((RequestParticles) r).particles;
+
+            updater.setTypes(p.types);
+            updater.setPositions(p.positions);
+            updater.setVelocities(p.velocities);
+
+            nParticles = p.types.length;
+            particleDensity = calcParticleDensity();
+
+            if (p.nTypes > settings.getMatrix().size()) {
+                handleRequest(new RequestMatrixSize(p.nTypes));
+            }
+
+            notifyParticleDensityChangeListeners();
+
+        } else if (r instanceof RequestSettings) {
+
+            Settings s = ((RequestSettings) r).settings;
+
+            for (Request req : new Request[]{
+                    new RequestMatrix(s.getMatrix()),
+                    new RequestDt(s.getDt()),
+                    new RequestForce(s.getForceFactor()),
+                    new RequestFriction(s.getFriction()),
+                    new RequestWrap(s.isWrap()),
+                    new RequestHeat(s.getHeat()),
+                    new RequestRMin(s.getRMin()),
+                    new RequestRMax(s.getRMax()),
+            }) handleRequest(req);
+
+        } else if (r instanceof RequestRendererSettings) {
+
+            RendererSettings s = ((RequestRendererSettings) r).rendererSettings;
+
+            for (Request req : new Request[]{
+                    new RequestPause(s.paused),
+                    new RequestDtEnabled(s.dtEnabled),
+                    new RequestSpawnMode(s.spawnMode),
+                    new RequestMatrixInitializerIndex(s.matrixInitializer),
+            }) handleRequest(req);
+
+        } else if (r instanceof RequestMatrixValue) {
 
             RequestMatrixValue req = (RequestMatrixValue) r;
             logic.Matrix oldMatrix = settings.getMatrix();
@@ -535,6 +611,14 @@ public class Renderer {
             }
 
             updater.setTypes(types);
+
+        } else if (r instanceof RequestHeat) {
+
+            getSettings().setHeat(((RequestHeat) r).heat);
+
+        } else if (r instanceof RequestWrap) {
+
+            getSettings().setWrap(((RequestWrap) r).wrap);
 
         } else if (r instanceof RequestParticleDensity) {
 
@@ -745,7 +829,18 @@ public class Renderer {
         }
     }
 
-    public void update(float dt) {
+    /**
+     * Update "physics", i.e. the velocities and positions of the particles.
+     * If the usage of a fixed time step is disabled
+     * (i.e {@link #isFixedTimeStepEnabled()} is false - which is the default case),
+     * the time step is calculated as an average of the time passing
+     * between two calls of the {@link #draw(PGraphics)} method.
+     * You can request to enable the usage of a fixed time step via {@link RequestDtEnabled}.
+     * The value of the fixed time step can be requested via {@link RequestDt}.
+     * This will set the dt-value in the {@link Settings} (retrieved via {@link #getSettings()}).
+     * @see #request(Request)
+     */
+    public void update() {
 
         physicsClock.in();
 
@@ -753,7 +848,7 @@ public class Renderer {
             if (useFixedTimeStep) {
                 settings.setDt(fixedTimeStepValueMillis / 1000f);
             } else {
-                settings.setDt(dt);
+                settings.setDt((float) (getFrameTime() / 1000));
             }
             updater.updateVelocities(settings, this.updaterLogic);
         }
@@ -1057,6 +1152,12 @@ public class Renderer {
         return windowHeight;
     }
 
+    /**
+     * Adds the given request to the end of an internal queue.
+     * This queue is processed when the method {@link #handleRequests()} is invoked.
+     * This approach allows to process user events asynchronously.
+     * @param r the request that is to be added to the end of the queue.
+     */
     public void request(Request r) {
         requests.add(r);
     }

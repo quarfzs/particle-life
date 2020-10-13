@@ -76,8 +76,9 @@ public class CanvasWidget extends Widget {
 
         clear(context);
 
-        renderer.update(0.02f);
-        renderer.updateUI(0.02f);
+        renderer.update();
+        renderer.handleRequests();
+        renderer.updateCamera();
         renderer.draw(context);
 
         requestRender();
