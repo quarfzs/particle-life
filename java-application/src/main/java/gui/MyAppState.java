@@ -108,6 +108,7 @@ public class MyAppState implements AppState {
         data.put("spawnmode", rendererSettings.spawnMode);
         data.put("matrixinitializer", rendererSettings.matrixInitializer);
         data.put("particlesize", rendererSettings.particleSize);
+        data.put("zoom", rendererSettings.cameraFollowZoomFactor);
 
         return data;
     }
@@ -121,5 +122,6 @@ public class MyAppState implements AppState {
         rendererSettings.spawnMode = data.getInt("spawnmode", rendererSettings.spawnMode);
         rendererSettings.matrixInitializer = data.getInt("matrixinitializer", rendererSettings.matrixInitializer);
         rendererSettings.particleSize = data.getFloat("particlesize", rendererSettings.particleSize);
+        rendererSettings.cameraFollowZoomFactor = data.getFloat("zoom", rendererSettings.cameraFollowZoomFactor);
     }
 }

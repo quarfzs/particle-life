@@ -9,6 +9,7 @@ public class Camera {
 
     private float scaleLerp = 10;
     private float focusLerp = 10;
+    private float followZoomFactor = 2f;
 
     private float scale = 1;
     private float nextScale = 1;
@@ -108,7 +109,7 @@ public class Camera {
 
         if (focusPool.size() >= MIN_FOCUS_POOL_SIZE) {
             following = true;
-            nextScale = 2f;
+            nextScale = followZoomFactor;
         } else {
             focusPool.clear();
         }
@@ -125,5 +126,16 @@ public class Camera {
         context.translate(context.width/2f, context.height/2f);
         context.scale(getScale());
         context.translate(-getFocusX(), -getFocusY());
+    }
+
+    public float getFollowZoomFactor() {
+        return followZoomFactor;
+    }
+
+    public void setFollowZoomFactor(float followZoomFactor) {
+        this.followZoomFactor = followZoomFactor;
+        if (following) {
+            nextScale = followZoomFactor;
+        }
     }
 }

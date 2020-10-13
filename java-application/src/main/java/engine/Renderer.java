@@ -174,7 +174,8 @@ public class Renderer {
                 useFixedTimeStep,
                 spawnMode,
                 currentMatrixInitializerIndex,
-                particleSize
+                particleSize,
+                camera.getFollowZoomFactor()
         );
     }
 
@@ -555,7 +556,8 @@ public class Renderer {
                     new RequestDtEnabled(s.dtEnabled),
                     new RequestSpawnMode(s.spawnMode),
                     new RequestMatrixInitializerIndex(s.matrixInitializer),
-                    new RequestParticleSize(s.particleSize)
+                    new RequestParticleSize(s.particleSize),
+                    new RequestCameraFollowZoomFactor(s.cameraFollowZoomFactor),
             }) handleRequest(req);
 
         } else if (r instanceof RequestMatrixValue) {
@@ -802,7 +804,6 @@ public class Renderer {
             }
 
         } else if (r instanceof RequestSpawnMode) {
-
             spawnMode = ((RequestSpawnMode) r).spawnMode;
         } else if (r instanceof RequestFriction) {
             settings.setFriction(((RequestFriction) r).friction);
@@ -820,6 +821,8 @@ public class Renderer {
             paused = ((RequestPause) r).pause;
         } else if (r instanceof RequestParticleSize) {
             particleSize = ((RequestParticleSize) r).particleSize;
+        } else if (r instanceof RequestCameraFollowZoomFactor) {
+            camera.setFollowZoomFactor(((RequestCameraFollowZoomFactor) r).followZoomFactor);
         }
     }
 
@@ -1151,6 +1154,10 @@ public class Renderer {
      */
     public float getParticleSize() {
         return particleSize;
+    }
+
+    public float getCameraFollowZoomFactor() {
+        return camera.getFollowZoomFactor();
     }
 
     /**

@@ -34,6 +34,7 @@
                 <FloatSlider id="rmax-slider" min="10" max="100">rMax</FloatSlider>
                 <Toggle id="dark-mode-toggle" state="true">Dark Mode</Toggle>
                 <FloatSlider id="particle-size-slider" min="0" max="5">Particle Size</FloatSlider>
+                <FloatSlider id="cam-zoom-slider" min="1" max="10">Zoom</FloatSlider>
                 <Button id="screenshot-button">Screenshot</Button>
             </ListView>
         </ScrollView>
