@@ -124,10 +124,10 @@ public abstract class Widget {
             canvas = graphicsProvider.createGraphics(width, height);
         }
         canvas.beginDraw();
+        render(canvas);
         if (!(this instanceof AppFrame)) {
             //renderDebug(canvas);
         }
-        render(canvas);
         canvas.endDraw();
         return canvas;
     }

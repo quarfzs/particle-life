@@ -12,6 +12,23 @@ public final class Utility {
     }
 
     public static int light(int color, double relativeBrightness) {
+
+        colorContext.pushStyle();
+
+        float f = (float) relativeBrightness;
+        float red = colorContext.red(color) * f;
+        float green = colorContext.green(color) * f;
+        float blue = colorContext.blue(color) * f;
+
+        colorContext.colorMode(PConstants.RGB);
+        int finalColor = colorContext.color(red, green, blue);
+
+        colorContext.popStyle();
+
+        return finalColor;
+    }
+
+    public static int relativeBrightness(int color, double relativeBrightness) {
         colorContext.pushStyle();
         float originalHue = colorContext.hue(color);
         float originalSaturation = colorContext.saturation(color);
@@ -53,5 +70,27 @@ public final class Utility {
         if (min != -1 && value < min) return min;
         if (max != -1 && value > max) return max;
         return value;
+    }
+
+    public static void drawShadowOutline(PGraphics context, int left, int top, int width, int height) {
+
+        context.pushStyle();
+        context.pushMatrix();
+
+        context.translate(left, top);
+
+        context.noFill();
+        context.strokeWeight(1);
+
+        context.stroke(context.color(0, 45));
+        context.line(0, 0, width, 0);
+        context.line(0, 0, 0, height);
+
+        context.stroke(context.color(0, 90));
+        context.line(0, height, width, height);
+        context.line(width, 0, width, height);
+
+        context.popMatrix();
+        context.popStyle();
     }
 }

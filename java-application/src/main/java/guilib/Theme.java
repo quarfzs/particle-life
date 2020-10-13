@@ -24,6 +24,8 @@ public class Theme {
         primaryContrast = c.color(255);
         secondary = c.color(250, 170, 100);
         secondaryContrast = c.color(0);
+        onColor = c.color(120, 150, 255);
+        offColor = c.color(127);
     }
 
     public int background;
@@ -32,4 +34,6 @@ public class Theme {
     public int primaryContrast;
     public int secondary;
     public int secondaryContrast;
+    public int onColor;
+    public int offColor;
 }

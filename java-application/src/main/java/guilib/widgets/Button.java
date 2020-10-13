@@ -28,7 +28,10 @@ public class Button extends Widget {
     public void updateSize(int minWidth, int minHeight, int maxWidth, int maxHeight) {
         int prefWidth = title.length() * 10;
         int prefHeight = 20;
-        setSize(Utility.constrainDimension(minWidth, prefWidth, maxWidth), Utility.constrainDimension(minWidth, prefHeight, maxWidth));
+        setSize(
+                Utility.constrainDimension(minWidth, prefWidth, maxWidth),
+                Math.min(Utility.constrainDimension(minHeight, prefHeight, maxHeight), prefHeight)
+        );
     }
 
     public String getTitle() {
@@ -54,6 +57,8 @@ public class Button extends Widget {
     @Override
     public void onMouseReleased(int x, int y, MouseButton button) {
         pressed = false;
+        highlighted = Utility.rectIntersect(x, y, 0, 0, width, height);
+
         requestRender();
 
         if (onClickListener != null && Utility.rectIntersect(x, y, 0, 0, width, height)) {
@@ -72,12 +77,10 @@ public class Button extends Widget {
 
         // background
 
-        if (pressed) {
-            context.fill(Theme.getInstance().secondary);
-        } else if (highlighted) {
-            context.fill(Utility.light(Theme.getInstance().primary, 0.95));
+        if (pressed || highlighted) {
+            context.fill(Theme.getInstance().onColor);
         } else {
-            context.fill(Utility.light(Theme.getInstance().primary, 1.0));
+            context.fill(Theme.getInstance().offColor);
         }
 
         context.noStroke();
@@ -90,25 +93,12 @@ public class Button extends Widget {
 
         if (context.textWidth(title) > width - 2 * padding) {
             context.textAlign(PConstants.LEFT, PConstants.CENTER);
-            context.text(title, padding, height / 2f);
+            context.text(title, padding, height / 2f - 1);
         } else {
             context.textAlign(PConstants.CENTER, PConstants.CENTER);
-            context.text(title, width / 2f, height / 2f);
+            context.text(title, width / 2f, height / 2f - 1);
         }
 
-        // frame
-
-        int strokeWeight;
-
-        if (pressed || highlighted) {
-            strokeWeight = 1;
-        } else {
-            strokeWeight = 1;
-        }
-
-        context.noFill();
-        context.stroke(Utility.light(Theme.getInstance().primary, 0.5));
-        context.strokeWeight(strokeWeight);
-        context.rect(0, 0, width - 1, height - 1);
+        Utility.drawShadowOutline(context, 0, 0, width - 1, height - 1);
     }
 }
