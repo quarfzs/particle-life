@@ -28,8 +28,12 @@ abstract class SliderBase extends Widget {
     @Override
     public void updateSize(int minWidth, int minHeight, int maxWidth, int maxHeight) {
         label.updateSize(minWidth, minHeight, maxWidth, maxHeight);
+        int prefWidth = label.getWidth();
         int prefHeight = label.getHeight() + 2 * getMargin();
-        setSize(minWidth, Utility.constrainDimension(minHeight, prefHeight, maxHeight));
+        setSize(
+                Utility.constrainDimension(minWidth, prefWidth, maxWidth),
+                Utility.constrainDimension(minHeight, prefHeight, maxHeight)
+        );
     }
 
     @Override

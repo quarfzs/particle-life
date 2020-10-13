@@ -6,17 +6,23 @@
     <horizontal>
         <ScrollView orientation="horizontal">
             <ListView orientation="horizontal" margin="10">
-                <Toggle id="toggle-pause" state="false">Pause</Toggle>
-                <ListView orientation="vertical" margin="5">
-                    <Button id="random-button">Random Matrix [R]</Button>
-                    <Button id="respawn-button">Respawn [S]</Button>
-                    <Button id="random-and-respawn-button">Random Matrix &amp; Respawn [Q]</Button>
-                </ListView>
-                <ListView>
+                <ListView orientation="vertical" margin="2">
+                    <Button id="random-and-respawn-button">Init. Matrix &amp; Respawn [Q]</Button>
                     <Button id="random-types-button">Random Types</Button>
                 </ListView>
+                <ListView orientation="vertical" margin="2">
+                    <Selector id="spawn-selector" title="Spawn [S]">everywhere,everywhere 2,sphere,sphere 2,circle,spiral,line,two spheres</Selector>
+                    <Button id="respawn-button">Respawn [S]</Button>
+                </ListView>
+                <ListView orientation="vertical" margin="2">
+                    <Selector id="initializer-selector" title="Matrix Initializer [R]">random,chains,chains 2,random equality</Selector>
+                    <Button id="random-button">Init. Matrix [R]</Button>
+                </ListView>
                 <Container id="matrix-container" width="40" height="40" />
-                <Toggle id="toggle-replace-removed" state="false">Replace Removed</Toggle>
+                <ListView orientation="vertical" margin="2">
+                    <IntSlider id="types-slider" min="1" max="17" step="1">Types</IntSlider>
+                    <Toggle id="toggle-replace-removed" state="false">Replace Removed</Toggle>
+                </ListView>
                 <Label id="stats-label">Stats</Label>
             </ListView>
         </ScrollView>
@@ -24,12 +30,9 @@
     <vertical>
         <ScrollView orientation="vertical">
             <ListView margin="4" orientation="vertical" align="start">
+                <Toggle id="toggle-pause" state="false">Pause [SPACE]</Toggle>
                 <FloatSlider id="density-slider" min="0" max="2" digits="2">Density in %</FloatSlider>
-                <Label>|Qpq][{\}/ÈILÊ^^</Label>
                 <FloatSlider id="heat-slider" min="0" max="200" digits="0">Heat</FloatSlider>
-                <IntSlider id="types-slider" min="1" max="17" step="1">Types</IntSlider>
-                <Selector id="initializer-selector" title="Matrix Initializer [R]">random,chains,chains 2,equality</Selector>
-                <Selector id="spawn-selector" title="Spawn [S]">everywhere,everywhere 2,sphere,sphere 2,circle,spiral,line,two spheres</Selector>
                 <FloatSlider id="friction-slider" min="0" max="60" digits="0">Friction</FloatSlider>
                 <Toggle id="dt-toggle" state="false">Use Fixed dt</Toggle>
                 <FloatSlider id="dt-slider" min="1" max="100" digits="0">Fixed dt (ms)</FloatSlider>

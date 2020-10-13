@@ -29,7 +29,7 @@ public class Label extends Widget {
         int maxLineLength = Arrays.stream(lines).mapToInt(String::length).max().getAsInt();
 
         setSize(
-                Utility.constrainDimension(minWidth, 8 * maxLineLength + 2 * 3, maxWidth),
+                Utility.constrainDimension(minWidth, 12 * maxLineLength, maxWidth),
                 Utility.constrainDimension(minHeight, nLines * 18, maxHeight)
         );
     }

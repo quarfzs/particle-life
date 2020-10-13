@@ -11,7 +11,7 @@ public class Button extends Widget {
         void onClick();
     }
 
-    private final int padding = 5;
+    private final int padding = 0;
 
     private String title;
 
@@ -26,7 +26,7 @@ public class Button extends Widget {
 
     @Override
     public void updateSize(int minWidth, int minHeight, int maxWidth, int maxHeight) {
-        int prefWidth = title.length() * 10;
+        int prefWidth = title.length() * 12;
         int prefHeight = 20;
         setSize(
                 Utility.constrainDimension(minWidth, prefWidth, maxWidth),
