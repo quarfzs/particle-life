@@ -11,11 +11,11 @@
                     <Button id="random-types-button">Random Types</Button>
                 </ListView>
                 <ListView orientation="vertical" margin="2">
-                    <Selector id="spawn-selector" title="Spawn [S]">everywhere,everywhere 2,sphere,sphere 2,circle,spiral,line,two spheres</Selector>
+                    <Selector id="spawn-selector" title="Spawn">everywhere,everywhere 2,sphere,sphere 2,circle,spiral,line,two spheres</Selector>
                     <Button id="respawn-button">Respawn [S]</Button>
                 </ListView>
                 <ListView orientation="vertical" margin="2">
-                    <Selector id="initializer-selector" title="Matrix Initializer [R]">random,chains,chains 2,random equality</Selector>
+                    <Selector id="initializer-selector" title="Matrix Initializer">random,chains,chains 2,random equality</Selector>
                     <Button id="random-button">Init. Matrix [R]</Button>
                 </ListView>
                 <Container id="matrix-container" width="40" height="40" />

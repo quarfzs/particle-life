@@ -6,6 +6,7 @@ import logic.Settings;
 import logic.Updater;
 import logic.UpdaterLogic;
 import engine.colormaker.ColorMaker;
+import processing.core.PConstants;
 import processing.core.PGraphics;
 import processing.core.PImage;
 import engine.requests.*;
@@ -940,6 +941,56 @@ public class Renderer {
         lastMouseY = mouseY;
     }
 
+    private int countParticlesInCircle(float cx, float cy, float radius) {
+
+        float[] positions = updater.getPositions();
+
+        int count = 0;
+
+        for (int index : updater.getRelevant(cx, cy, radius, settings.isWrap())) {
+
+            int positionIndex = index * 2;
+
+            float x = positions[positionIndex];
+            float y = positions[positionIndex + 1];
+
+            if (settings.isWrap()) {
+
+                if (x > cx) {
+                    float wrappedX2 = x - settings.getRangeX();
+                    if (cx - wrappedX2 < x - cx) {
+                        x = wrappedX2;
+                    }
+                } else {
+                    float wrappedX2 = x + settings.getRangeX();
+                    if (wrappedX2 - cx < cx - x) {
+                        x = wrappedX2;
+                    }
+                }
+                if (y > cy) {
+                    float wrappedY2 = y - settings.getRangeY();
+                    if (cy - wrappedY2 < y - cy) {
+                        y = wrappedY2;
+                    }
+                } else {
+                    float wrappedY2 = y + settings.getRangeY();
+                    if (wrappedY2 - cy < cy - y) {
+                        y = wrappedY2;
+                    }
+                }
+            }
+
+            float dx = x - cx;
+            float dy = y - cy;
+
+            if (dx * dx + dy * dy < radius * radius) {
+                count++;
+            }
+        }
+
+        return count;
+    }
+
     public void draw(PGraphics context) {
 
         renderingClock.in();
@@ -953,11 +1004,22 @@ public class Renderer {
 
         drawParticles(context);
 
+        // draw cursor
         if (!camera.isFollowing() && Math.abs(camera.getScale() - 1) < 0.1f) {
             context.pushStyle();
             context.noFill();
-            context.stroke(128);
+            context.stroke(127, 180);
             context.ellipse(mouseX, mouseY, particleDragSelectionRadius, particleDragSelectionRadius);
+
+            int count = countParticlesInCircle(mouseX, mouseY, particleDragSelectionRadius);
+            if (count > 0) {
+                context.fill(127, 180);
+                context.noStroke();
+                context.textSize(8);
+                context.textAlign(PConstants.CENTER, PConstants.BOTTOM);
+                context.text(count, mouseX, mouseY - particleDragSelectionRadius);
+            }
+
             context.popStyle();
         }
 
