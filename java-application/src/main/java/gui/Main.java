@@ -22,7 +22,7 @@ public class Main implements App<MyAppState> {
     private MatrixWidget matrixWidget;
     private IntSlider typesSlider;
     private FloatSlider heatSlider;
-    private FloatSlider densitySlider;
+    private FloatSlider densityPerCentSlider;
     private Button randomButton;
     private Button respawnButton;
     private Button randomAndRespawnButton;
@@ -86,7 +86,7 @@ public class Main implements App<MyAppState> {
         statsLabel = (Label) widgets.get("stats-label");
         heatSlider = (FloatSlider) widgets.get("heat-slider");
         typesSlider = (IntSlider) widgets.get("types-slider");
-        densitySlider = (FloatSlider) widgets.get("density-slider");
+        densityPerCentSlider = (FloatSlider) widgets.get("density-slider");
         randomButton = (Button) widgets.get("random-button");
         respawnButton = (Button) widgets.get("respawn-button");
         randomAndRespawnButton = (Button) widgets.get("random-and-respawn-button");
@@ -122,7 +122,7 @@ public class Main implements App<MyAppState> {
         togglePause.setState(renderer.isPaused());
         matrixWidget.matrixChanged(renderer.getSettings().getMatrix());
         typesSlider.setValue(renderer.getSettings().getMatrix().size());
-        densitySlider.setValue(renderer.getParticleDensity());
+        densityPerCentSlider.setValue(renderer.getParticleDensity() * 100);
         heatSlider.setValue(renderer.getSettings().getHeat());
         initializerSelector.setSelectedIndex(renderer.getMatrixInitializerIndex());
         spawnSelector.setSelectedIndex(renderer.getSpawnMode());
@@ -142,7 +142,7 @@ public class Main implements App<MyAppState> {
             matrixWidget.matrixChanged(matrix);
             typesSlider.setValue(matrix.size());
         });
-        renderer.addParticleDensityListener((n, density) -> densitySlider.setValue(density));
+        renderer.addParticleDensityListener((n, density) -> densityPerCentSlider.setValue(density * 100));
         renderer.addFrameListener(() -> {
             statsLabel.setText(String.format(
                     "fps: %.0f%n" +
@@ -167,7 +167,7 @@ public class Main implements App<MyAppState> {
         heatSlider.addChangeListener(value -> canvas.getRenderer().request(new RequestHeat((float) value)));
 
         togglePause.setChangeListener(state -> canvas.getRenderer().request(new RequestPause(state)));
-        densitySlider.addChangeListener(value -> canvas.getRenderer().request(new RequestParticleDensity((float) value)));
+        densityPerCentSlider.addChangeListener(value -> canvas.getRenderer().request(new RequestParticleDensity((float) value / 100)));
 
         randomButton.setOnClickListener(() -> canvas.getRenderer().request(new RequestRandomMatrix()));
         respawnButton.setOnClickListener(() -> canvas.getRenderer().request(new RequestRespawn()));

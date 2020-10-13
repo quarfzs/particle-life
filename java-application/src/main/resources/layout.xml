@@ -20,21 +20,21 @@
     <vertical>
         <ScrollView orientation="vertical">
             <ListView margin="4" orientation="vertical" align="start">
-                <FloatSlider id="density-slider" min="0" max="0.03" digits="3">Density</FloatSlider>
+                <FloatSlider id="density-slider" min="0" max="2" digits="2">Density in %</FloatSlider>
                 <Label>Settings</Label>
-                <FloatSlider id="heat-slider" min="0" max="200">Heat</FloatSlider>
+                <FloatSlider id="heat-slider" min="0" max="200" digits="0">Heat</FloatSlider>
                 <IntSlider id="types-slider" min="1" max="17" step="1">Types</IntSlider>
                 <Selector id="initializer-selector" title="Matrix Initializer [R]">random,chains,chains 2,equality</Selector>
                 <Selector id="spawn-selector" title="Spawn [S]">everywhere,everywhere 2,sphere,sphere 2,circle,spiral,line,two spheres</Selector>
-                <FloatSlider id="friction-slider" min="0" max="60">Friction</FloatSlider>
+                <FloatSlider id="friction-slider" min="0" max="60" digits="0">Friction</FloatSlider>
                 <Toggle id="dt-toggle" state="false">Use Fixed dt</Toggle>
-                <FloatSlider id="dt-slider" min="1" max="100">Fixed dt (ms)</FloatSlider>
-                <FloatSlider id="force-slider" min="0" max="1500">Force</FloatSlider>
-                <FloatSlider id="rmin-slider" min="0" max="100">rMin</FloatSlider>
-                <FloatSlider id="rmax-slider" min="10" max="100">rMax</FloatSlider>
+                <FloatSlider id="dt-slider" min="1" max="100" digits="0">Fixed dt (ms)</FloatSlider>
+                <FloatSlider id="force-slider" min="0" max="1500" digits="0">Force</FloatSlider>
+                <FloatSlider id="rmin-slider" min="0" max="100" digits="0">rMin</FloatSlider>
+                <FloatSlider id="rmax-slider" min="10" max="100" digits="0">rMax</FloatSlider>
                 <Toggle id="dark-mode-toggle" state="true">Dark Mode</Toggle>
-                <FloatSlider id="particle-size-slider" min="0" max="5">Particle Size</FloatSlider>
-                <FloatSlider id="cam-zoom-slider" min="1" max="10">Zoom</FloatSlider>
+                <FloatSlider id="particle-size-slider" min="0" max="5" digits="1">Particle Size</FloatSlider>
+                <FloatSlider id="cam-zoom-slider" min="1" max="10" digits="1">Zoom</FloatSlider>
                 <Button id="screenshot-button">Screenshot</Button>
             </ListView>
         </ScrollView>
