@@ -21,8 +21,6 @@ public class FloatSlider extends SliderBase {
         this.digits = digits;
 
         setValue(min);
-
-        requestRender();
     }
 
     public void setValue(double value) {
