@@ -83,6 +83,10 @@ abstract class SliderBase extends Widget {
     @Override
     protected final void render(PGraphics context) {
 
+        // This ensures that we call getLabelText() AFTER the constructor of the subclass has executed.
+        // A subclass may needs variables for getLabelText() that are passed to its constructor (e.g. a title).
+        // They would be null, if we were to set the label text in the constructor of THIS class
+        // (since this constructor is executed first!).
         if (!labelTextSet) {
             label.setText(getLabelText());
             labelTextSet = true;
@@ -161,10 +165,11 @@ abstract class SliderBase extends Widget {
      */
     protected final void setRatio(double ratio) {
         double newRatio = constrainRatio(ratio);
-        if (newRatio != this.ratio || !labelTextSet) {
+        if (newRatio != this.ratio) {
             this.ratio = newRatio;
-            label.setText(getLabelText());
-            labelTextSet = true;
+            if (labelTextSet) {  // don't call getLabelText() before the constructor of the subclass could execute!
+                label.setText(getLabelText());
+            }
             requestRender();
         }
     }
