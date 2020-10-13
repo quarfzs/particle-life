@@ -8,7 +8,7 @@ import logic.UpdaterLogic;
 import engine.colormaker.ColorMaker;
 import processing.core.PGraphics;
 import processing.core.PImage;
-import requests.*;
+import engine.requests.*;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
