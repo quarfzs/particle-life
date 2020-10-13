@@ -1,11 +1,11 @@
-package gui.colormaker;
+package engine.colormaker;
 
 import engine.Helper;
 import processing.core.PGraphics;
 
 public class RainbowColorMaker extends ColorMaker {
 
-    private float[][] rainbow = new float[][]{
+    private final float[][] rainbow = new float[][]{
             new float[]{255, 0, 0},//red
             new float[]{255, 127, 0},//orange
             new float[]{255, 255, 0},//yellow

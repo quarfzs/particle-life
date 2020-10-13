@@ -1,10 +1,11 @@
 package engine;
 
+import engine.colormaker.RainbowColorMaker;
 import logic.DefaultUpdaterLogic;
 import logic.Settings;
 import logic.Updater;
 import logic.UpdaterLogic;
-import gui.colormaker.ColorMaker;
+import engine.colormaker.ColorMaker;
 import processing.core.PGraphics;
 import processing.core.PImage;
 import requests.*;
@@ -13,7 +14,6 @@ import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import java.awt.*;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.Random;
 
@@ -38,9 +38,9 @@ public class Renderer {
     private ArrayList<String> matrixInitializerNames = new ArrayList<>();
     private int currentMatrixInitializerIndex = 0;
 
+    private int[] typeColors = new int[0];
+
     private Random random = new Random();
-    private ColorMaker colorMaker;
-    private HashMap<Integer, Integer> typeColorMap;
 
     private boolean drawForceDiagram = false;
 
@@ -119,18 +119,16 @@ public class Renderer {
         screenshotListeners.forEach(listener -> listener.onScreenshot(img));
     }
 
-    public Renderer(float width, float height, ColorMaker colorMaker) {
+    public Renderer(float width, float height) {
 
         this.windowWidth = width;
         this.windowHeight = height;
-        this.colorMaker = colorMaker;
 
         this.camera = new Camera(width / 2f, height / 2f);
 
         initAttractionSetters();
         settings.setMatrix(new Matrix(6, (i, j) -> 0));
         makeMatrix();
-        calcColors();
 
         this.updater = new MultithreadedUpdater();
         this.updaterLogic = new DefaultUpdaterLogic();
@@ -272,7 +270,6 @@ public class Renderer {
 
     private void reset() {
         makeMatrix();
-        calcColors();
         spawnParticles();
         camera.stopFollow();
 
@@ -360,14 +357,6 @@ public class Renderer {
                 new Matrix(settings.getMatrix().size(),
                 matrixInitializers.get(currentMatrixInitializerIndex))
         );
-    }
-
-    private void calcColors() {
-        final int matrixSize = settings.getMatrix().size();
-        typeColorMap = new HashMap<>(matrixSize);
-        for (int type = 0; type < matrixSize; type++) {
-            typeColorMap.put(type, colorMaker.getColor(type / (float) matrixSize));
-        }
     }
 
 
@@ -641,7 +630,6 @@ public class Renderer {
                             requestedMatrixSize,
                             (i, j) -> (i < oldMatrixSize && j < oldMatrixSize) ? oldMatrix.get(i, j) : 0
                     ));
-                    calcColors();
                     notifyMatrixChangeListeners();
                 }
             }
@@ -669,8 +657,6 @@ public class Renderer {
                         oldMatrix.size() - 1,
                         (i, j) -> oldMatrix.get(i < req.index ? i : i + 1, j < req.index ? j : j + 1)
                 ));
-
-                calcColors();
 
                 // remove all particles of the given type and decrease type of all larger types
 
@@ -736,7 +722,6 @@ public class Renderer {
                     notifyParticleDensityChangeListeners();
                 }
 
-                calcColors();
                 notifyMatrixChangeListeners();
             }
 
@@ -886,8 +871,9 @@ public class Renderer {
     public void drawParticles(PGraphics context) {
 
         context.pushStyle();
-
         context.noStroke();
+
+        lazyCalcTypeColors(context);
 
         int[] types = updater.getTypes();
         float[] positions = updater.getPositions();
@@ -901,7 +887,7 @@ public class Renderer {
             float x = positions[positionIndex];
             float y = positions[positionIndex + 1];
 
-            context.fill(getColor(type));
+            context.fill(typeColors[type]);
             context.rect(x, y, particleSize, particleSize);
 
             typeIndex += 1;
@@ -911,8 +897,35 @@ public class Renderer {
         context.popStyle();
     }
 
-    private int getColor(int type) {
-        return typeColorMap.get(type);
+    /**
+     * Calculate the type colors if the matrix size changed since last calculation, and store them.
+     * Otherwise, do nothing (keep the previously calculated colors).
+     */
+    private void lazyCalcTypeColors(PGraphics context) {
+        if (typeColors.length != settings.getMatrix().size()) {
+            calcTypeColors(context);
+        }
+    }
+
+    /**
+     * Calculate the color for each type and store them.
+     */
+    private void calcTypeColors(PGraphics context) {
+        int nTypes = settings.getMatrix().size();
+        typeColors = new int[nTypes];
+        ColorMaker colorMaker = getColorMaker(context);
+        for (int i = 0; i < nTypes; i++) {
+            typeColors[i] = colorMaker.getColor(i / (float) nTypes);
+        }
+    }
+
+    /**
+     * Do not store this object longer than you need to! (The context can become invalid over time.)
+     * @return the ColorMaker that provides the colors for this Renderer.
+     * @see ColorMaker
+     */
+    private ColorMaker getColorMaker(PGraphics context) {
+        return new RainbowColorMaker(context);
     }
 
     private void drawForces(PGraphics context, logic.Matrix matrix) {
@@ -926,7 +939,7 @@ public class Renderer {
         context.translate(size/2, size/2);
 
         for (int type = 0; type < matrix.size(); type++) {
-            context.fill(typeColorMap.get(type));
+            context.fill(typeColors[type]);
             context.ellipse(size + type * size, 0, size / 2, size / 2);
             context.ellipse(0, size + type * size, size / 2, size / 2);
         }
@@ -1022,6 +1035,26 @@ public class Renderer {
         } else {
             return 0;
         }
+    }
+
+    /**
+     * @return an integer representing the color in which particles of the given type are drawn.
+     */
+    public int getColor(int type, PGraphics context) {
+        if (type >= 0 && type < settings.getMatrix().size()) {
+            lazyCalcTypeColors(context);
+            return getColorMaker(context).getColor(type / (float) settings.getMatrix().size());
+        } else {
+            return 0;
+        }
+    }
+
+    public float getWidth() {
+        return windowWidth;
+    }
+
+    public float getHeight() {
+        return windowHeight;
     }
 
     public void request(Request r) {

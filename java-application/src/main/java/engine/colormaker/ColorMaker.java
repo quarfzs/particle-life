@@ -1,4 +1,4 @@
-package gui.colormaker;
+package engine.colormaker;
 
 import processing.core.PGraphics;
 

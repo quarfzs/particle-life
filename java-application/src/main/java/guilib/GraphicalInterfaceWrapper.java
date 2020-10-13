@@ -2,51 +2,39 @@ package guilib;
 
 import guilib.constants.MouseButton;
 import guilib.widgets.Utility;
-import guilib.widgets.Widget;
 import processing.core.PApplet;
 import processing.core.PGraphics;
 import processing.event.KeyEvent;
 import processing.event.MouseEvent;
 
-import java.util.Map;
+import static java.awt.event.KeyEvent.VK_F11;
 
 public class GraphicalInterfaceWrapper extends PApplet implements GraphicsProvider, Theme.ColorProvider {
 
-    public interface OnInitListener {
-        void init(GraphicalInterface g);
+    private static String layoutFilePath;
+    private static String rootWidgetId;
+    private static App app = null;
+    private static AppState lastAppState = null;
+
+    public static void open(String layoutFilePath, String rootWidgetId, App app, boolean fullScreen) {
+        GraphicalInterfaceWrapper.layoutFilePath = layoutFilePath;
+        GraphicalInterfaceWrapper.rootWidgetId = rootWidgetId;
+        GraphicalInterfaceWrapper.app = app;
+        PApplet.main(GraphicalInterfaceWrapper.class, layoutFilePath, rootWidgetId, Boolean.toString(fullScreen));
     }
 
-    public static GraphicalInterfaceWrapper instance;
-    private static GuiState staticState = new GuiState();
-    private static OnInitListener onInitListener = null;
-
-    public static GraphicalInterfaceWrapper getInstance() {
-        return instance;
-    }
-
-    public static void open(String layoutFilePath, String rootWidgetId, OnInitListener onInitListener) {
-        GraphicalInterfaceWrapper.onInitListener = onInitListener;
-        PApplet.main(GraphicalInterfaceWrapper.class, layoutFilePath, rootWidgetId, staticState.toString());
-    }
-
-    private GuiState state;
     private GraphicalInterface graphicalInterface;
-
-    public Map<String, Widget> getWidgetMap() {
-        return graphicalInterface.getWidgetMap();
-    }
 
     @Override
     public void settings() {
 
-        state = GuiState.fromString(args[1]);
-
         String renderer = JAVA2D;
+        boolean openInFullScreen = Boolean.parseBoolean(args[2]);
 
-        if (state.fullScreen) {
+        if (openInFullScreen) {
             fullScreen(renderer);
         } else {
-            size(state.width, state.height, renderer);
+            size(1200, 800, renderer);
         }
     }
 
@@ -65,11 +53,7 @@ public class GraphicalInterfaceWrapper extends PApplet implements GraphicsProvid
                 args[1], // rootWidgetId
                 this);
 
-        instance = this;
-        if (onInitListener != null) {
-            onInitListener.init(graphicalInterface);
-            onInitListener = null;
-        }
+        app.init(graphicalInterface, lastAppState);
     }
 
     @Override
@@ -119,7 +103,20 @@ public class GraphicalInterfaceWrapper extends PApplet implements GraphicsProvid
 
     @Override
     public void keyPressed(KeyEvent event) {
-        graphicalInterface.keyPressed(event.getKeyCode(), event.getKey());
+        if (event.getKeyCode() == VK_F11) {
+
+            lastAppState = app.createAppState();
+            PApplet.main(GraphicalInterfaceWrapper.class, layoutFilePath, rootWidgetId, Boolean.toString(!sketchFullScreen()));
+
+            // todo: this will still keep the window in memory and
+            //  create an additional one every time the user toggles fullscreen.
+            //  Find a better solution!
+            surface.setVisible(false);
+            noLoop();
+
+        } else {
+            graphicalInterface.keyPressed(event.getKeyCode(), event.getKey());
+        }
     }
 
     @Override

@@ -1,17 +1,13 @@
 package gui;
 
 import engine.Renderer;
-import gui.colormaker.ColorMaker;
-import gui.colormaker.RainbowColorMaker;
 import guilib.constants.MouseButton;
 import guilib.widgets.Widget;
 import processing.core.PGraphics;
 
 public class CanvasWidget extends Widget {
 
-    private boolean pause = false;
     private Renderer renderer = null;
-    private ColorMaker colorMaker = null;
 
     interface OnLoadListener {
         void onLoad();
@@ -23,15 +19,6 @@ public class CanvasWidget extends Widget {
         this.onLoadListener = listener;
     }
 
-    private void testInit(PGraphics context) {
-        if (colorMaker == null) {
-            colorMaker = new RainbowColorMaker(context);
-        }
-        if (renderer == null) {
-            renderer = new Renderer(getWidth(), getHeight(), colorMaker);
-        }
-    }
-
     public Renderer getRenderer() {
         return renderer;
     }
@@ -39,13 +26,6 @@ public class CanvasWidget extends Widget {
     @Override
     public void updateSize(int minWidth, int minHeight, int maxWidth, int maxHeight) {
         setSize(maxWidth, maxHeight);
-    }
-
-    public void setPause(boolean pause) {
-        this.pause = pause;
-        if (!pause) {
-            requestRender();
-        }
     }
 
     @Override
@@ -84,7 +64,10 @@ public class CanvasWidget extends Widget {
 
     @Override
     protected void render(PGraphics context) {
-        testInit(context);
+
+        if (renderer == null) {
+            renderer = new Renderer(getWidth(), getHeight());
+        }
 
         if (onLoadListener != null) {
             onLoadListener.onLoad();
@@ -93,9 +76,7 @@ public class CanvasWidget extends Widget {
 
         clear(context);
 
-        if (!pause) {
-            renderer.update(0.02f);
-        }
+        renderer.update(0.02f);
         renderer.updateUI(0.02f);
         renderer.draw(context);
 

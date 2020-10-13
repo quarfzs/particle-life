@@ -1,9 +1,7 @@
 package gui;
 
 import engine.Renderer;
-import guilib.GraphicalInterface;
-import guilib.GraphicalInterfaceWrapper;
-import guilib.GraphicsProvider;
+import guilib.*;
 import guilib.widgets.*;
 import processing.core.PImage;
 import requests.*;
@@ -12,13 +10,13 @@ import javax.swing.*;
 import java.io.File;
 import java.util.Map;
 
-public class Main {
+public class Main implements App<MyAppState> {
 
     public static void main(String[] args) {
-        GraphicalInterfaceWrapper.open("layout.xml", "root", Main::new);
+        GraphicalInterfaceWrapper.open("layout.xml", "root", new Main(), false);
     }
 
-    private final GraphicsProvider graphicsProvider;
+    private GraphicsProvider graphicsProvider;
 
     private CanvasWidget canvas;
     private MatrixWidget matrixWidget;
@@ -42,7 +40,8 @@ public class Main {
     private FloatSlider rMinSlider;
     private FloatSlider rMaxSlider;
 
-    public Main(GraphicalInterface g) {
+    @Override
+    public void init(GraphicalInterface g, MyAppState state) {
 
         graphicsProvider = g.graphicsProvider;
 
@@ -58,6 +57,11 @@ public class Main {
                 // this should be called every time the render instance changes:
                 copyValues(renderer);
                 attachListenersToRenderer(renderer);
+
+                if (state != null) {
+                    //todo (this is just a demo)
+                    renderer.request(new RequestMatrix(state.renderer.getSettings().getMatrix()));
+                }
 
                 attachListenersToWidgets();
 
@@ -88,6 +92,11 @@ public class Main {
         forceSlider = (FloatSlider) widgets.get("force-slider");
         rMinSlider = (FloatSlider) widgets.get("rmin-slider");
         rMaxSlider = (FloatSlider) widgets.get("rmax-slider");
+    }
+
+    @Override
+    public MyAppState createAppState() {
+        return new MyAppState(canvas.getRenderer());
     }
 
     private void copyValues(Renderer renderer) {
