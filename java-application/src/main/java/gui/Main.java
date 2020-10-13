@@ -40,6 +40,7 @@ public class Main implements App<MyAppState> {
     private FloatSlider forceSlider;
     private FloatSlider rMinSlider;
     private FloatSlider rMaxSlider;
+    private FloatSlider particleSizeSlider;
 
     @Override
     public void init(GraphicalInterface g, MyAppState state) {
@@ -99,6 +100,7 @@ public class Main implements App<MyAppState> {
         forceSlider = (FloatSlider) widgets.get("force-slider");
         rMinSlider = (FloatSlider) widgets.get("rmin-slider");
         rMaxSlider = (FloatSlider) widgets.get("rmax-slider");
+        particleSizeSlider = (FloatSlider) widgets.get("particle-size-slider");
     }
 
     @Override
@@ -128,6 +130,7 @@ public class Main implements App<MyAppState> {
         forceSlider.setValue(renderer.getSettings().getForceFactor());
         rMinSlider.setValue(renderer.getSettings().getRMin());
         rMaxSlider.setValue(renderer.getSettings().getRMax());
+        particleSizeSlider.setValue(renderer.getParticleSize());
         darkModeToggle.setState(Theme.getTheme().darkMode);
     }
 
@@ -185,6 +188,7 @@ public class Main implements App<MyAppState> {
         forceSlider.addChangeListener(value -> canvas.getRenderer().request(new RequestForce((float) value)));
         rMinSlider.addChangeListener(value -> canvas.getRenderer().request(new RequestRMin((float) value)));
         rMaxSlider.addChangeListener(value -> canvas.getRenderer().request(new RequestRMax((float) value)));
+        particleSizeSlider.addChangeListener(value -> canvas.getRenderer().request(new RequestParticleSize((float) value)));
 
         darkModeToggle.setChangeListener(darkMode -> {
             Theme.setDarkMode(darkMode);

@@ -1,8 +1,8 @@
 package engine.requests;
 
-public class RequestWrap extends Request {
+public final class RequestWrap extends Request {
 
-    public boolean wrap;
+    public final boolean wrap;
 
     public RequestWrap(boolean wrap) {
         this.wrap = wrap;

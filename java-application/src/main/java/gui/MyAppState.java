@@ -107,6 +107,7 @@ public class MyAppState implements AppState {
         data.put("dtenabled", rendererSettings.dtEnabled);
         data.put("spawnmode", rendererSettings.spawnMode);
         data.put("matrixinitializer", rendererSettings.matrixInitializer);
+        data.put("particlesize", rendererSettings.particleSize);
 
         return data;
     }
@@ -119,5 +120,6 @@ public class MyAppState implements AppState {
         rendererSettings.dtEnabled = data.getBoolean("dtenabled", rendererSettings.dtEnabled);
         rendererSettings.spawnMode = data.getInt("spawnmode", rendererSettings.spawnMode);
         rendererSettings.matrixInitializer = data.getInt("matrixinitializer", rendererSettings.matrixInitializer);
+        rendererSettings.particleSize = data.getFloat("particlesize", rendererSettings.particleSize);
     }
 }

@@ -173,7 +173,8 @@ public class Renderer {
                 paused,
                 useFixedTimeStep,
                 spawnMode,
-                currentMatrixInitializerIndex
+                currentMatrixInitializerIndex,
+                particleSize
         );
     }
 
@@ -554,6 +555,7 @@ public class Renderer {
                     new RequestDtEnabled(s.dtEnabled),
                     new RequestSpawnMode(s.spawnMode),
                     new RequestMatrixInitializerIndex(s.matrixInitializer),
+                    new RequestParticleSize(s.particleSize)
             }) handleRequest(req);
 
         } else if (r instanceof RequestMatrixValue) {
@@ -816,6 +818,8 @@ public class Renderer {
             settings.setRMax(((RequestRMax) r).rMax);
         } else if (r instanceof RequestPause) {
             paused = ((RequestPause) r).pause;
+        } else if (r instanceof RequestParticleSize) {
+            particleSize = ((RequestParticleSize) r).particleSize;
         }
     }
 
@@ -1140,6 +1144,13 @@ public class Renderer {
 
     public float getHeight() {
         return windowHeight;
+    }
+
+    /**
+     * @return how big a particle appears on screen, in pixels.
+     */
+    public float getParticleSize() {
+        return particleSize;
     }
 
     /**

@@ -2,9 +2,9 @@ package engine.requests;
 
 import logic.Settings;
 
-public class RequestSettings extends Request {
+public final class RequestSettings extends Request {
 
-    public Settings settings;
+    public final Settings settings;
 
     public RequestSettings(Settings settings) {
         this.settings = settings;
