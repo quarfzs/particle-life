@@ -24,8 +24,8 @@
                 <Label>Settings</Label>
                 <FloatSlider id="heat-slider" min="0" max="200">Heat</FloatSlider>
                 <IntSlider id="types-slider" min="1" max="17" step="1">Types</IntSlider>
-                <Selector id="initializer-selector" title="Matrix Initializer">random f,chains,random chains,equal pairs</Selector>
-                <Selector id="spawn-selector" title="Spawn">Uniform,Centered,Sphere,Centered Sphere,Spiral,Circle</Selector>
+                <Selector id="initializer-selector" title="Matrix Initializer [R]">random,chains,chains 2,equality</Selector>
+                <Selector id="spawn-selector" title="Spawn [S]">everywhere,everywhere 2,sphere,sphere 2,circle,spiral,line,two spheres</Selector>
                 <FloatSlider id="friction-slider" min="0" max="60">Friction</FloatSlider>
                 <Toggle id="dt-toggle" state="false">Use Fixed dt</Toggle>
                 <FloatSlider id="dt-slider" min="1" max="100">Fixed dt (ms)</FloatSlider>

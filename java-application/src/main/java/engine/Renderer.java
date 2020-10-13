@@ -411,20 +411,20 @@ public class Renderer {
             float randomX;
             float randomY;
 
-            float radius = Math.min(rangeX, rangeY) / 3;
+            final float radius = Math.min(rangeX, rangeY) / 4;
             switch (spawnMode) {
 
                 default -> {  // uniform
                     randomX = rangeX * (float) Math.random();
                     randomY = rangeY * (float) Math.random();
                 }
-                case 1 -> {  // sphere
+                case 1 -> {  // centered uniform
                     double angle = 2 * Math.PI * Math.random();
                     float r = radius * (float) random.nextGaussian();
                     randomX = rangeX / 2 + r * (float) Math.cos(angle);
                     randomY = rangeY / 2 + r * (float) Math.sin(angle);
                 }
-                case 2 -> {  // centered
+                case 2 -> {  // sphere
                     double angle = 2 * Math.PI * Math.random();
                     float r = radius * (float) Math.sqrt(Math.random());
                     randomX = rangeX / 2 + r * (float) Math.cos(angle);
@@ -436,17 +436,28 @@ public class Renderer {
                     randomX = rangeX / 2 + r * (float) Math.cos(angle);
                     randomY = rangeY / 2 + r * (float) Math.sin(angle);
                 }
-                case 4 -> {  // spiral
+                case 4 -> {  // circle
+                    double angle = 2 * Math.PI * Math.random();
+                    float r = radius * (1 + 0.05f * (float) (1 - 2 * Math.random()));
+                    randomX = rangeX / 2 + r * (float) Math.cos(angle);
+                    randomY = rangeY / 2 + r * (float) Math.sin(angle);
+                }
+                case 5 -> {  // spiral
                     double f = Math.random();
                     double angle = 2 * Math.PI * f;
                     float r = radius * (float) Math.sqrt(f) + radius * 0.1f * (float) Math.random();
                     randomX = rangeX / 2 + r * (float) Math.cos(angle);
                     randomY = rangeY / 2 + r * (float) Math.sin(angle);
                 }
-                case 5 -> {  // circle
+                case 6 -> {  // line
+                    randomX = rangeX * (float) Math.random();
+                    randomY = rangeY / 2 * (1 + 0.05f * (float) (1 - 2 * Math.random()));
+                }
+                case 7 -> {  // two spheres
                     double angle = 2 * Math.PI * Math.random();
-                    float r = radius * (1 + 0.05f * (float) (1 - 2 * Math.random()));
-                    randomX = rangeX / 2 + r * (float) Math.cos(angle);
+                    float r = 1 / (float) Math.sqrt(2) * radius * (float) Math.sqrt(Math.random());
+                    float cx = rangeX * (random.nextBoolean() ? 0.25f : 0.75f);
+                    randomX = cx + r * (float) Math.cos(angle);
                     randomY = rangeY / 2 + r * (float) Math.sin(angle);
                 }
             }
