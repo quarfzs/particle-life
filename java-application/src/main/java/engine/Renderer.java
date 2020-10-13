@@ -458,16 +458,6 @@ public class Renderer {
         updater.setVelocities(velocities);
     }
 
-    public void keyReleased(char key) {
-        switch (key) {
-            case 'r' -> reset();
-            case 's' -> respawn();
-            case 'o' -> openSettingsGUI();
-            case 'f' -> toggleCameraFollow();
-            case ' ' -> paused ^= true;
-        }
-    }
-
     public void mouseScrolled(float pixels) {
         particleDragSelectionRadius *= (float) Math.pow(2, pixels / 2000);
         particleDragSelectionRadius = Math.max(particleDragSelectionRadius, 0.1f);

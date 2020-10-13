@@ -7,9 +7,9 @@
         <ScrollView orientation="horizontal">
             <ListView orientation="horizontal" margin="10">
                 <Toggle id="toggle-pause" state="false">Pause</Toggle>
-                <Button id="random-button">Random Matrix</Button>
-                <Button id="respawn-button">Respawn</Button>
-                <Button id="random-and-respawn-button">Random Matrix &amp; Respawn</Button>
+                <Button id="random-button">Random Matrix [R]</Button>
+                <Button id="respawn-button">Respawn [S]</Button>
+                <Button id="random-and-respawn-button">Random Matrix &amp; Respawn [Q]</Button>
                 <Button id="random-types-button">Random Types</Button>
                 <Container id="matrix-container" width="40" height="40" />
                 <Toggle id="toggle-replace-removed" state="false">Replace Removed</Toggle>

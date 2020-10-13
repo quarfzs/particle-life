@@ -1,6 +1,7 @@
 package gui;
 
 import engine.Renderer;
+import engine.requests.*;
 import guilib.constants.MouseButton;
 import guilib.widgets.Widget;
 import processing.core.PGraphics;
@@ -49,7 +50,11 @@ public class CanvasWidget extends Widget {
 
     @Override
     public void onMouseReleased(int x, int y, MouseButton button) {
-        renderer.mouseReleased(0);
+        renderer.mouseReleased(switch (button) {
+            case LEFT -> 0;
+            case WHEEL -> 1;
+            case RIGHT -> 2;
+        });
     }
 
     @Override
@@ -59,7 +64,15 @@ public class CanvasWidget extends Widget {
 
     @Override
     public void onKeyReleased(int keyCode, char key) {
-        renderer.keyReleased(key);
+        switch (key) {
+            case 'r' -> renderer.request(new RequestRandomMatrix());
+            case 's' -> renderer.request(new RequestRespawn());
+            case 'q' -> {
+                renderer.request(new RequestRandomMatrix());
+                renderer.request(new RequestRespawn());
+            }
+            case ' ' -> renderer.request(new RequestPause(!renderer.isPaused()));
+        }
     }
 
     @Override
