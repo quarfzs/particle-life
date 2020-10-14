@@ -297,19 +297,6 @@ public class Renderer {
         }
     }
 
-    private void reset() {
-        makeMatrix();
-        spawnParticles();
-        camera.stopFollow();
-
-        notifyMatrixChangeListeners();
-    }
-
-    private void respawn() {
-        spawnParticles();
-        camera.stopFollow();
-    }
-
     private void initAttractionSetters() {
 
         final Matrix.Initializer randomInitializer = (i, j) -> Helper.uniform(-1, 1);
@@ -642,7 +629,8 @@ public class Renderer {
 
         } else if (r instanceof RequestRespawn) {
 
-            respawn();
+            spawnParticles();
+            camera.stopFollow();
 
         } else if (r instanceof RequestRandomTypes) {
 
