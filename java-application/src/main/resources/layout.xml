@@ -15,7 +15,7 @@
                     <Button id="respawn-button">Respawn [S]</Button>
                 </ListView>
                 <ListView orientation="vertical" margin="2">
-                    <Selector id="initializer-selector" title="Matrix Initializer">random,randomize 0.1,randomize 0.5,flip,rotate,chains,random equality</Selector>
+                    <Selector id="initializer-selector" title="Matrix Initializer">random,randomize 0.1,randomize 0.5,flip,rotate,chains,random equality,zero</Selector>
                     <Button id="random-button">Init. Matrix [R]</Button>
                 </ListView>
                 <Container id="matrix-container" width="40" height="40" />

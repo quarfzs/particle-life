@@ -311,8 +311,11 @@ public class Renderer {
     private void initAttractionSetters() {
 
         final Matrix.Initializer randomInitializer = (i, j) -> Helper.uniform(-1, 1);
+
+        // "random"
         matrixInitializers.add(randomInitializer);
 
+        // "randomize 0.1"
         matrixInitializers.add(new Matrix.Initializer() {
 
             private logic.Matrix from;
@@ -328,6 +331,7 @@ public class Renderer {
             }
         });
 
+        // "randomize 0.5"
         matrixInitializers.add(new Matrix.Initializer() {
 
             private logic.Matrix from;
@@ -343,6 +347,7 @@ public class Renderer {
             }
         });
 
+        // "flip"
         matrixInitializers.add(new Matrix.Initializer() {
 
             private logic.Matrix from;
@@ -358,6 +363,7 @@ public class Renderer {
             }
         });
 
+        // "rotate"
         matrixInitializers.add(new Matrix.Initializer() {
 
             private logic.Matrix from;
@@ -373,6 +379,7 @@ public class Renderer {
             }
         });
 
+        // "chains"
         matrixInitializers.add(new Matrix.Initializer() {
             private int n;
 
@@ -394,6 +401,7 @@ public class Renderer {
             }
         });
 
+        // "random equality"
         matrixInitializers.add(new Matrix.Initializer() {
 
             private Matrix m;
@@ -408,6 +416,9 @@ public class Renderer {
                 return m.get(Math.min(i, j), Math.max(i, j));
             }
         });
+
+        // "zero"
+        matrixInitializers.add((i, j) -> 0);
     }
 
     /**
