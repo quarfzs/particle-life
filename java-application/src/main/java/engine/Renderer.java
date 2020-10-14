@@ -37,14 +37,11 @@ public class Renderer {
     private Settings settings = new Settings();
 
     private ArrayList<Matrix.Initializer> matrixInitializers = new ArrayList<>();
-    private ArrayList<String> matrixInitializerNames = new ArrayList<>();
     private int currentMatrixInitializerIndex = 0;
 
     private int[] typeColors = new int[0];
 
     private Random random = new Random();
-
-    private boolean drawForceDiagram = false;
 
     private float mouseX = 0;
     private float mouseY = 0;
@@ -284,7 +281,6 @@ public class Renderer {
         }
         c.addSlider("Particle Size on Screen", (int) particleSize, value -> particleSize = value, 1, 5, 0, 1);
         c.addCheckBox("Wrap World", settings.isWrap(), settings::setWrap);
-        c.addCheckBox("Draw Matrix", drawForceDiagram, state -> drawForceDiagram = state);
 
         frame.setVisible(true);
         //frame.setLocationRelativeTo(null);  // center window on screen
@@ -314,17 +310,12 @@ public class Renderer {
         camera.stopFollow();
     }
 
-    private void addAttractionSetter(String name, Matrix.Initializer initializer) {
-        matrixInitializerNames.add(name);
-        matrixInitializers.add(initializer);
-    }
-
     private void initAttractionSetters() {
 
         final Matrix.Initializer randomInitializer = (i, j) -> Helper.uniform(-1, 1);
-        addAttractionSetter("random", randomInitializer);
+        matrixInitializers.add(randomInitializer);
 
-        addAttractionSetter("randomize 0.1", new Matrix.Initializer() {
+        matrixInitializers.add(new Matrix.Initializer() {
 
             private logic.Matrix from;
 
@@ -339,7 +330,7 @@ public class Renderer {
             }
         });
 
-        addAttractionSetter("randomize 0.5", new Matrix.Initializer() {
+        matrixInitializers.add(new Matrix.Initializer() {
 
             private logic.Matrix from;
 
@@ -354,7 +345,7 @@ public class Renderer {
             }
         });
 
-        addAttractionSetter("flip", new Matrix.Initializer() {
+        matrixInitializers.add(new Matrix.Initializer() {
 
             private logic.Matrix from;
 
@@ -369,7 +360,7 @@ public class Renderer {
             }
         });
 
-        addAttractionSetter("rotate", new Matrix.Initializer() {
+        matrixInitializers.add(new Matrix.Initializer() {
 
             private logic.Matrix from;
 
@@ -384,7 +375,7 @@ public class Renderer {
             }
         });
 
-        addAttractionSetter("chains", new Matrix.Initializer() {
+        matrixInitializers.add(new Matrix.Initializer() {
             private int n;
 
             @Override
@@ -405,7 +396,7 @@ public class Renderer {
             }
         });
 
-        addAttractionSetter("random equality", new Matrix.Initializer() {
+        matrixInitializers.add(new Matrix.Initializer() {
 
             private Matrix m;
 
@@ -1066,11 +1057,6 @@ public class Renderer {
         context.popMatrix();
         context.popStyle();
 
-        //todo remove
-        if (drawForceDiagram) {
-            drawForces(context, settings.getMatrix());
-        }
-
         renderingClock.out();
 
         generalClock.out();
@@ -1137,55 +1123,6 @@ public class Renderer {
      */
     private ColorMaker getColorMaker(PGraphics context) {
         return new RainbowColorMaker(context);
-    }
-
-    private void drawForces(PGraphics context, logic.Matrix matrix) {
-        context.pushStyle();
-        context.pushMatrix();
-
-        float size = 20;
-
-        context.translate(context.width - size * (matrix.size() + 1), 0);
-
-        context.translate(size/2, size/2);
-
-        for (int type = 0; type < matrix.size(); type++) {
-            context.fill(typeColors[type]);
-            context.ellipse(size + type * size, 0, size / 2, size / 2);
-            context.ellipse(0, size + type * size, size / 2, size / 2);
-        }
-
-        context.translate(size / 2, size / 2);
-        context.textAlign(context.CENTER, context.CENTER);
-        for (int i = 0; i < matrix.size(); i++) {
-            for (int j = 0; j < matrix.size(); j++) {
-
-                float attraction = matrix.get(i, j);
-
-                if (attraction > 0) {
-                    float c = 255 * attraction;
-                    context.fill(0, c, 0);
-                } else {
-                    float c = -255 * attraction;
-                    context.fill(c, 0, 0);
-                }
-
-                context.rect(j * size, i * size, size, size);
-
-                context.fill(255);
-                context.text(String.format("%.0f", attraction * 10), (j + 0.5f) * size, (i + 0.5f) * size);
-            }
-        }
-
-        context.fill(255);
-        context.textAlign(context.RIGHT);
-        context.text(String.format("%s [%d]",
-                matrixInitializerNames.get(currentMatrixInitializerIndex),
-                currentMatrixInitializerIndex
-        ), size * matrix.size(), size * matrix.size() + size);
-
-        context.popMatrix();
-        context.popStyle();
     }
 
     public int getParticleCount() {
