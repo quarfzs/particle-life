@@ -209,4 +209,14 @@ public class Main implements App<MyAppState> {
             image.save(file.getAbsolutePath());
         }
     }
+
+    @Override
+    public String getTitle() {
+        return "Particle Life";
+    }
+
+    @Override
+    public String getIconPath() {
+        return "app-icon.png";
+    }
 }

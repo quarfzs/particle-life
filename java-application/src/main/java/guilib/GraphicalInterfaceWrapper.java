@@ -43,6 +43,13 @@ public class GraphicalInterfaceWrapper extends PApplet implements GraphicsProvid
         Theme.init(this);
         Utility.setColorContext(getGraphics());
 
+        surface.setTitle(app.getTitle());
+
+        String iconPath = app.getIconPath();
+        if (iconPath != null) {
+            surface.setIcon(loadImage(iconPath));
+        }
+
         initGraphicalInterface();
     }
 
