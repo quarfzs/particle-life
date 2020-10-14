@@ -754,21 +754,24 @@ public class Renderer {
             int requestedMatrixSize = ((RequestMatrixSize) r).size;
             int oldMatrixSize = settings.getMatrix().size();
 
-            if (requestedMatrixSize != oldMatrixSize) {
-
-                if (requestedMatrixSize < oldMatrixSize) {
-                    // remove points of types that now no longer exist
-                    for (int i = oldMatrixSize - 1; i >= requestedMatrixSize; i--) {
-                        handleRequest(new RequestRemoveType(i));
-                    }
-                } else {
-                    logic.Matrix oldMatrix = settings.getMatrix();
-                    settings.setMatrix(new Matrix(
-                            requestedMatrixSize,
-                            (i, j) -> (i < oldMatrixSize && j < oldMatrixSize) ? oldMatrix.get(i, j) : 0
-                    ));
-                    notifyMatrixChangeListeners();
+            if (requestedMatrixSize < oldMatrixSize) {
+                // remove points of types that now no longer exist
+                for (int i = oldMatrixSize - 1; i >= requestedMatrixSize; i--) {
+                    handleRequest(new RequestRemoveType(i));
                 }
+            } else if (requestedMatrixSize > oldMatrixSize) {
+                logic.Matrix oldMatrix = settings.getMatrix();
+
+                Matrix emptyMatrix = new Matrix(requestedMatrixSize);
+                final Matrix.Initializer initializer = matrixInitializers.get(currentMatrixInitializerIndex);
+                initializer.init(emptyMatrix);
+                Matrix newMatrix = new Matrix(
+                        emptyMatrix,
+                        (i, j) -> (i < oldMatrixSize && j < oldMatrixSize) ?
+                                oldMatrix.get(i, j) : initializer.getValue(i, j)  // only override the new values
+                );
+                settings.setMatrix(newMatrix);
+                notifyMatrixChangeListeners();
             }
 
         } else if (r instanceof RequestScreenshot) {
