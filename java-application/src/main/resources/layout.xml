@@ -39,6 +39,7 @@
                 <FloatSlider id="force-slider" min="0" max="1500" digits="0">Force</FloatSlider>
                 <FloatSlider id="rmin-slider" min="0" max="100" digits="0">rMin</FloatSlider>
                 <FloatSlider id="rmax-slider" min="10" max="100" digits="0">rMax</FloatSlider>
+                <Toggle id="wrap-toggle" state="true">Wrap World</Toggle>
                 <Toggle id="dark-mode-toggle" state="true">Dark Mode</Toggle>
                 <FloatSlider id="particle-size-slider" min="0" max="5" digits="1">Particle Size</FloatSlider>
                 <FloatSlider id="cam-zoom-slider" min="1" max="10" digits="1">Zoom</FloatSlider>

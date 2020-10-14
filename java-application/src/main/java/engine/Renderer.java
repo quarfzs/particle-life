@@ -279,8 +279,6 @@ public class Renderer {
                 }
             });
         }
-        c.addSlider("Particle Size on Screen", (int) particleSize, value -> particleSize = value, 1, 5, 0, 1);
-        c.addCheckBox("Wrap World", settings.isWrap(), settings::setWrap);
 
         frame.setVisible(true);
         //frame.setLocationRelativeTo(null);  // center window on screen
