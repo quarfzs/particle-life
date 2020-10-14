@@ -12,7 +12,9 @@ import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.URL;
+import java.net.URLClassLoader;
 import java.util.Map;
 
 public class GraphicalInterface {
@@ -50,13 +52,10 @@ public class GraphicalInterface {
     }
 
     private Map<String, Widget> build(String layoutFilePath) throws IOException, SAXException, ParserConfigurationException {
-        URL resource = getClass().getClassLoader().getResource(layoutFilePath);
-        File inputFile = new File(
-                resource.getFile()
-        );
         DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
         DocumentBuilder dBuilder = dbFactory.newDocumentBuilder();
-        Document doc = dBuilder.parse(inputFile);
+        InputStream inputStream = getClass().getClassLoader().getResourceAsStream(layoutFilePath);
+        Document doc = dBuilder.parse(inputStream);
 
         Element root = doc.getDocumentElement();
         root.normalize();
