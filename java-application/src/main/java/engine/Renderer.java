@@ -78,10 +78,15 @@ public class Renderer {
         void onScreenshot(PImage img);
     }
 
+    public interface PauseChangeListener {
+        void pausedChanged(boolean paused);
+    }
+
     public ArrayList<MatrixChangeListener> matrixChangeListeners = new ArrayList<>();
     public ArrayList<ParticleDensityListener> particleDensityListeners = new ArrayList<>();
     public ArrayList<FrameListener> frameListeners = new ArrayList<>();
     public ArrayList<ScreenshotListener> screenshotListeners = new ArrayList<>();
+    public ArrayList<PauseChangeListener> pauseListeners = new ArrayList<>();
 
     public void addMatrixChangeListener(MatrixChangeListener listener) {
         matrixChangeListeners.add(listener);
@@ -116,6 +121,14 @@ public class Renderer {
 
     private void notifyScreenshotListeners(PImage img) {
         screenshotListeners.forEach(listener -> listener.onScreenshot(img));
+    }
+
+    public void addPauseChangeListener(PauseChangeListener listener) {
+        pauseListeners.add(listener);
+    }
+
+    private void notifyPauseChangeListeners() {
+        pauseListeners.forEach(listener -> listener.pausedChanged(paused));
     }
 
     public Renderer(float width, float height) {
@@ -854,6 +867,7 @@ public class Renderer {
             settings.setRMax(((RequestRMax) r).rMax);
         } else if (r instanceof RequestPause) {
             paused = ((RequestPause) r).pause;
+            notifyPauseChangeListeners();
         } else if (r instanceof RequestParticleSize) {
             particleSize = ((RequestParticleSize) r).particleSize;
         } else if (r instanceof RequestCameraFollowZoomFactor) {

@@ -155,6 +155,7 @@ public class Main implements App<MyAppState> {
                     renderer.getFps(), renderer.getAvgPhysicsCalcTime(), renderer.getAvgRenderingTime(), renderer.getParticleCount()));
         });
         renderer.addScreenshotListener(this::saveScreenshot);
+        renderer.addPauseChangeListener(paused -> togglePause.setState(paused));
     }
 
     private void attachListenersToWidgets(GraphicalInterface g) {
