@@ -13,7 +13,7 @@ import java.util.Map;
 public class Main implements App<MyAppState> {
 
     public static void main(String[] args) {
-        GraphicalInterfaceWrapper.open("layout.xml", "root", new Main(), false);
+        GraphicalInterfaceWrapper.open("layout.xml", "root", new Main(), true);
     }
 
     private GraphicsProvider graphicsProvider;
