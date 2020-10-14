@@ -281,7 +281,7 @@ public class Renderer {
             c.addButton("Apply Matrix", () -> {
                 Matrix m = MatrixParser.parseMatrix(matrixTextArea.getText());
                 if (m != null) {
-                    request(new RequestMatrix(m));
+                    request(new RequestMatrix(m, false));
                 }
             });
             c.addButton("Get Matrix", () -> matrixTextArea.setText(MatrixParser.matrixToString(settings.getMatrix())));
@@ -585,7 +585,7 @@ public class Renderer {
             particleDensity = calcParticleDensity();
 
             if (p.nTypes > settings.getMatrix().size()) {
-                handleRequest(new RequestMatrixSize(p.nTypes));
+                handleRequest(new RequestMatrixSize(p.nTypes, true));
             }
 
             notifyParticleDensityChangeListeners();
@@ -595,7 +595,7 @@ public class Renderer {
             Settings s = ((RequestSettings) r).settings;
 
             for (Request req : new Request[]{
-                    new RequestMatrix(s.getMatrix()),
+                    new RequestMatrix(s.getMatrix(), false),
                     new RequestDt(s.getDt()),
                     new RequestForce(s.getForceFactor()),
                     new RequestFriction(s.getFriction()),
@@ -637,7 +637,7 @@ public class Renderer {
             int oldMatrixSize = settings.getMatrix().size();
 
             if (requestedMatrixSize != oldMatrixSize) {
-                handleRequest(new RequestMatrixSize(requestedMatrixSize));
+                handleRequest(new RequestMatrixSize(requestedMatrixSize, req.keepParticleCount));
             }
 
             settings.setMatrix(req.matrix);
@@ -749,31 +749,6 @@ public class Renderer {
 
             currentMatrixInitializerIndex = ((RequestMatrixInitializerIndex) r).index;
 
-        } else if (r instanceof RequestMatrixSize) {
-
-            int requestedMatrixSize = ((RequestMatrixSize) r).size;
-            int oldMatrixSize = settings.getMatrix().size();
-
-            if (requestedMatrixSize < oldMatrixSize) {
-                // remove points of types that now no longer exist
-                for (int i = oldMatrixSize - 1; i >= requestedMatrixSize; i--) {
-                    handleRequest(new RequestRemoveType(i));
-                }
-            } else if (requestedMatrixSize > oldMatrixSize) {
-                logic.Matrix oldMatrix = settings.getMatrix();
-
-                Matrix emptyMatrix = new Matrix(requestedMatrixSize);
-                final Matrix.Initializer initializer = matrixInitializers.get(currentMatrixInitializerIndex);
-                initializer.init(emptyMatrix);
-                Matrix newMatrix = new Matrix(
-                        emptyMatrix,
-                        (i, j) -> (i < oldMatrixSize && j < oldMatrixSize) ?
-                                oldMatrix.get(i, j) : initializer.getValue(i, j)  // only override the new values
-                );
-                settings.setMatrix(newMatrix);
-                notifyMatrixChangeListeners();
-            }
-
         } else if (r instanceof RequestScreenshot) {
 
             PGraphics context = ((RequestScreenshot) r).context;
@@ -782,6 +757,23 @@ public class Renderer {
             drawParticles(context);
             context.endDraw();
             notifyScreenshotListeners(context.copy());
+
+        } else if (r instanceof RequestMatrixSize) {
+
+            RequestMatrixSize req = (RequestMatrixSize) r;
+
+            int matrixSize = getSettings().getMatrix().size();
+            if (req.size > matrixSize) {
+                while (matrixSize < req.size) {
+                    handleRequest(new RequestAddType(matrixSize, req.keepParticleCount));
+                    matrixSize++;
+                }
+            } else if (req.size < matrixSize) {
+                while (matrixSize > req.size) {
+                    handleRequest(new RequestRemoveType(matrixSize - 1, req.keepParticleCount));
+                    matrixSize--;
+                }
+            }
 
         } else if (r instanceof RequestRemoveType) {
 
@@ -804,17 +796,14 @@ public class Renderer {
                 float[] positions = updater.getPositions();
                 float[] velocities = updater.getVelocities();
 
-                if (req.replaceRemovedPoints) {
+                if (req.keepParticleCount) {
 
                     int nTypes = settings.getMatrix().size();
 
                     for (int i = 0; i < types.length; i++) {
                         if (types[i] == req.index) {
-                            if (req.replaceRandom) {
-                                types[i] = random.nextInt(nTypes);
-                            } else {
-                                types[i] = req.newType;
-                            }
+                            // pick random other type
+                            types[i] = random.nextInt(nTypes);
                         } else if (types[i] > req.index) {
                             types[i]--;
                         }
@@ -863,6 +852,62 @@ public class Renderer {
                 }
 
                 notifyMatrixChangeListeners();
+            }
+
+        } else if (r instanceof RequestAddType) {
+
+            RequestAddType req = (RequestAddType) r;
+
+            // change matrix
+
+            final logic.Matrix oldMatrix = settings.getMatrix();
+            Matrix emptyMatrix = new Matrix(oldMatrix.size() + 1);
+            final Matrix.Initializer initializer = matrixInitializers.get(currentMatrixInitializerIndex);
+            initializer.init(emptyMatrix);
+            Matrix newMatrix = new Matrix(
+                    emptyMatrix,
+                    (i, j) -> {
+                        // only override the new values
+                        if (i == req.index || j == req.index) {
+                            return initializer.getValue(i, j);
+                        } else {
+                            int i2 = i < req.index ? i : i - 1;
+                            int j2 = j < req.index ? j : j - 1;
+                            return oldMatrix.get(i2, j2);
+                        }
+                    }
+            );
+            settings.setMatrix(newMatrix);
+            notifyMatrixChangeListeners();
+
+            // add particles
+            if (!req.keepParticleCount) {
+
+                final int oldParticleCount = nParticles;
+
+                nParticles += nParticles / getSettings().getMatrix().size();
+                particleDensity = calcParticleDensity();
+
+                int[] types = Arrays.copyOf(updater.getTypes(), nParticles);
+                float[] positions = Arrays.copyOf(updater.getPositions(), nParticles * 2);
+                float[] velocities = Arrays.copyOf(updater.getVelocities(), nParticles * 2);
+
+                final float rangeX = settings.getRangeX();
+                final float rangeY = settings.getRangeY();
+
+                for (int typeIndex = oldParticleCount; typeIndex < types.length; typeIndex++) {
+                    types[typeIndex] = req.index;  // all of the same (new) type
+                    positions[typeIndex * 2] = random.nextFloat() * rangeX;
+                    positions[typeIndex * 2 + 1] = random.nextFloat() * rangeY;
+                    velocities[typeIndex * 2] = 0;
+                    velocities[typeIndex * 2 + 1] = 0;
+                }
+
+                updater.setTypes(types);
+                updater.setPositions(positions);
+                updater.setVelocities(velocities);
+
+                notifyParticleDensityChangeListeners();
             }
 
         } else if (r instanceof RequestSpawnMode) {

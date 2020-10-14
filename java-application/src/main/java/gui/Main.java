@@ -30,7 +30,7 @@ public class Main implements App<MyAppState> {
     private Button screenshotButton;
     private Toggle darkModeToggle;
     private Toggle togglePause;
-    private Toggle toggleReplaceRemoved;
+    private Toggle keepDensityToggle;
     private Label statsLabel;
     private Selector initializerSelector;
     private Selector spawnSelector;
@@ -83,7 +83,7 @@ public class Main implements App<MyAppState> {
         ((Container) widgets.get("matrix-container")).setContent(matrixWidget);
 
         togglePause = (Toggle) widgets.get("toggle-pause");
-        toggleReplaceRemoved = (Toggle) widgets.get("toggle-replace-removed");
+        keepDensityToggle = (Toggle) widgets.get("toggle-keep-density");
         statsLabel = (Label) widgets.get("stats-label");
         heatSlider = (FloatSlider) widgets.get("heat-slider");
         typesSlider = (IntSlider) widgets.get("types-slider");
@@ -161,13 +161,9 @@ public class Main implements App<MyAppState> {
     private void attachListenersToWidgets(GraphicalInterface g) {
 
         matrixWidget.addMatrixChangeListener((i, j, value) -> canvas.getRenderer().request(new RequestMatrixValue(i, j, value)));
-        matrixWidget.addRemoveTypeListener(index -> canvas.getRenderer().request(
-                toggleReplaceRemoved.getState() ?
-                        new RequestRemoveType(index, false)
-                        : new RequestRemoveType(index))
-        );
+        matrixWidget.addRemoveTypeListener(index -> canvas.getRenderer().request(new RequestRemoveType(index, keepDensityToggle.getState())));
 
-        typesSlider.addChangeListener(value -> canvas.getRenderer().request(new RequestMatrixSize(value)));
+        typesSlider.addChangeListener(value -> canvas.getRenderer().request(new RequestMatrixSize(value, keepDensityToggle.getState())));
         heatSlider.addChangeListener(value -> canvas.getRenderer().request(new RequestHeat((float) value)));
 
         togglePause.setChangeListener(state -> canvas.getRenderer().request(new RequestPause(state)));
